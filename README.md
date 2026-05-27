@@ -4,14 +4,20 @@ Real workflow automation engine with a feminine devops twist.
 
 Like n8n, but make it girl devops. Actually executes workflows — not a visualizer.
 
-## Quick Start
+## Two ways to use
+
+### 1. Full mode (recommended) — real execution engine
 
 ```bash
 npm install
 npm start
 ```
 
-Open http://localhost:3099
+Open http://localhost:3099 — full execution, webhooks, scheduling, SQLite persistence.
+
+### 2. Offline mode — just open index.html
+
+Open `index.html` directly in your browser. You can build and edit workflows, but execution requires the server. Workflows save to browser localStorage.
 
 ## What it does
 
