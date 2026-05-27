@@ -1,3 +1,5 @@
 .claude/
 node_modules/
 roseops.db
+roseops.db-shm
+roseops.db-wal
