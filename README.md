@@ -44,6 +44,8 @@ Open `index.html` directly in your browser. You can build and edit workflows, bu
 | Node | What it does |
 |---|---|
 | **Trigger** | Manual, webhook, or scheduled start |
+
+## Badge
 | **HTTP Request** | Make real API calls |
 | **Code** | Run JavaScript, transform data |
 | **Delay** | Wait N milliseconds |
