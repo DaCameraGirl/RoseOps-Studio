@@ -1,38 +1,53 @@
 # RoseOps Studio
 
-n8n-inspired workflow automation builder with a feminine devops twist.
+Real workflow automation engine with a feminine devops twist.
 
-Visual pipelines, drag-to-connect nodes, runbook automation — no build step required.
+Like n8n, but make it girl devops. Actually executes workflows — not a visualizer.
 
-## Open it
+## Quick Start
 
-Open `index.html` in a browser. No install step required.
+```bash
+npm install
+npm start
+```
 
-## Features
+Open http://localhost:3099
 
-- **n8n-style connection handles** — drag from output handles (circles) to create connections between nodes. Click any connection to delete it.
-- **4 starter templates** — Release Train, Incident Response, Founder Ops, Brand Drop.
-- **Node palette** — add Trigger, Triage, Build, Deploy, or Observe nodes anywhere on the board.
-- **Drag to reposition** — pick up any node and move it freely.
-- **Inspector panel** — edit node name, tool channel, runbook notes, priority, and execution mode.
-- **Auto-arrange** — lay out the canvas in a clean grid.
-- **Run preview** — walk through the workflow execution order with visual feedback.
-- **Chat trigger** — type commands: `run`, `reset`, `arrange`, `load [template]`, `add [node type]`, `help`.
-- **SVG arrow markers** — connections show direction with arrowheads.
-- **Feminine theme** — rose-gradients, glow effects, polished UI.
+## What it does
 
-## Templates
+**Real execution, not mockups:**
+- **HTTP Request** — calls real APIs (GET, POST, PUT, PATCH, DELETE)
+- **Code** — runs custom JavaScript in a VM, data flows between nodes
+- **Delay** — waits, then passes data downstream
+- **Filter** — conditional logic (JS expression)
+- **Webhook** — receives real HTTP requests, triggers workflows
+- **Schedule** — cron-based automatic execution
+- **Send Email** — SMTP logging (SMTP config can be added)
+- **Manual** — click Execute to run
 
-| Template | Description |
+**n8n-style features:**
+- Drag-to-connect nodes via output/input handles
+- Click connections to delete them
+- Live SSE streaming of execution progress
+- Node config panels per type (URL, code editor, cron expr, etc.)
+- Workflow persistence via SQLite
+- Webhook URLs auto-generated for webhook trigger nodes
+
+## Node Types
+
+| Node | What it does |
 |---|---|
-| **Release Train** | CI/CD with approval, deploy, and observability |
-| **Incident Response** | Alert intake, comms, mitigation, and postmortem |
-| **Founder Ops** | Ship a product update with metrics and customer loops |
-| **Brand Drop** | Campaign launch with content review and social |
+| **Trigger** | Manual, webhook, or scheduled start |
+| **HTTP Request** | Make real API calls |
+| **Code** | Run JavaScript, transform data |
+| **Delay** | Wait N milliseconds |
+| **Filter** | Conditional pass/fail |
+| **Webhook** | Receive real HTTP requests |
+| **Schedule** | Cron-based execution |
+| **Send Email** | Email via SMTP |
 
-## Files
+## Tech
 
-- `index.html` — app structure
-- `styles.css` — responsive interface styling
-- `app.js` — workflow state and interactions
-- `assets/` — app icons
+- **Backend:** Node.js, Express, SQLite (better-sqlite3), node-cron
+- **Frontend:** Vanilla JS, SVG, SSE real-time updates
+- **No build step required**

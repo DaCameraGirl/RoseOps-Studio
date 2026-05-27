@@ -762,6 +762,75 @@ textarea:focus {
   font-weight: 900;
 }
 
+.run-log li.completed {
+  color: var(--teal);
+}
+
+.run-log li.error {
+  color: var(--danger);
+  font-weight: 900;
+}
+
+.node-result {
+  margin: 6px 0 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.35;
+  word-break: break-all;
+  max-height: 40px;
+  overflow: hidden;
+}
+
+.result-success {
+  background: rgba(19, 166, 143, 0.1);
+  color: var(--teal);
+  border: 1px solid rgba(19, 166, 143, 0.2);
+}
+
+.result-error {
+  background: rgba(200, 52, 84, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(200, 52, 84, 0.2);
+}
+
+#nodeConfig {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+#nodeConfig label {
+  display: grid;
+  gap: 6px;
+}
+
+#nodeConfig select,
+#nodeConfig input,
+#nodeConfig textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel);
+}
+
+.webhook-url {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.webhook-url input {
+  font-family: monospace;
+  font-size: 11px;
+  background: var(--panel-soft);
+}
+
 /* ===== n8n-style connection handles ===== */
 .node-handles {
   position: absolute;

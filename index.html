@@ -1,184 +1,114 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>RoseOps Studio</title>
-    <link rel="icon" href="assets/roseops-icon.ico" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div class="app-shell">
-      <aside class="sidebar" aria-label="Workflow templates and nodes">
-        <div class="brand">
-          <img class="brand-mark image-mark" src="assets/roseops-icon.png" alt="" />
-          <div>
-            <h1>RoseOps</h1>
-            <p>DevOps workflow console</p>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RoseOps Studio</title>
+  <link rel="icon" href="assets/roseops-icon.ico" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Workflows and nodes">
+      <div class="brand">
+        <img class="brand-mark image-mark" src="assets/roseops-icon.png" alt="" />
+        <div>
+          <h1>RoseOps</h1>
+          <p>Workflow automation engine</p>
+        </div>
+      </div>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Workflows</h2>
+          <button class="icon-button" id="newWorkflow" title="New workflow">+</button>
+        </div>
+        <div class="template-list" id="workflowList"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Add Node</h2>
+        <div class="block-palette" id="blockPalette"></div>
+      </section>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Automation Builder</p>
+          <h2 id="flowTitle">Workflow</h2>
+          <div class="workspace-meta">
+            <span>live execution</span>
+            <span>real nodes</span>
+            <span>webhooks</span>
           </div>
         </div>
+        <div class="topbar-actions">
+          <button class="ghost-button" id="autoArrange">Auto arrange</button>
+          <button class="primary-button" id="runFlow"><span aria-hidden="true">&#9654;</span>Execute</button>
+        </div>
+      </header>
 
-        <div class="desk-card">
-          <p class="eyebrow">RoseOps Brief</p>
-          <strong>Production-grade automation with a sharper point of view.</strong>
-          <span>Build release paths, incident routes, approvals, and observability checks without losing the brand.</span>
-          <div class="brief-grid" aria-label="Workspace stats">
-            <span><b>5</b> nodes</span>
-            <span><b>3</b> gates</span>
-            <span><b>1</b> runbook</span>
+      <section class="board-wrap" aria-label="Workflow canvas">
+        <div class="board-toolbar">
+          <div class="status-pill">
+            <span class="status-dot"></span>
+            <span id="nodeCount">0 nodes</span>
           </div>
+          <div class="hint">Build your workflow — drag nodes, connect handles, hit Execute</div>
+        </div>
+        <div class="board" id="board">
+          <svg class="connections" id="connections" aria-hidden="true"></svg>
+          <div class="nodes" id="nodes"></div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="inspector" aria-label="Selected node settings">
+      <section class="panel inspector-card">
+        <div class="inspector-empty" id="inspectorEmpty">
+          <div class="empty-mark" aria-hidden="true">*</div>
+          <h2>Select a node</h2>
+          <p>Choose a node to edit its settings, config, and execution results.</p>
         </div>
 
-        <section class="panel">
+        <form class="inspector-form hidden" id="inspectorForm">
           <div class="panel-heading">
-            <h2>Starter Flows</h2>
-            <button class="icon-button" id="resetFlow" title="Reset current flow" aria-label="Reset current flow">
-              <span aria-hidden="true">&#8635;</span>
-            </button>
+            <h2>Node Details</h2>
+            <button type="button" class="icon-button danger" id="deleteNode" title="Delete node">&#215;</button>
           </div>
-          <div class="template-list" id="templateList"></div>
-        </section>
-
-        <section class="panel">
-          <h2>Add Node</h2>
-          <div class="block-palette" id="blockPalette"></div>
-        </section>
-      </aside>
-
-      <main class="workspace">
-        <header class="topbar">
-          <div>
-            <p class="eyebrow">Automation Builder</p>
-            <h2 id="flowTitle">Release Train</h2>
-            <div class="workspace-meta" aria-label="Workflow qualities">
-              <span>approval gates</span>
-              <span>runbook ready</span>
-              <span>prod-aware</span>
-            </div>
+          <label>Name<input id="nodeName" name="name" autocomplete="off" /></label>
+          <label>Channel<input id="nodeChannel" name="channel" autocomplete="off" /></label>
+          <div class="settings-grid">
+            <label>Priority<select id="nodePriority"><option>Low</option><option>Normal</option><option>High</option><option>Critical</option></select></label>
+            <label>Mode<select id="nodeMode"><option>Manual</option><option>Auto</option><option>Approval</option></select></label>
           </div>
-          <div class="topbar-actions">
-            <button class="ghost-button" id="autoArrange">Auto arrange</button>
-            <button class="primary-button" id="runFlow">
-              <span aria-hidden="true">&#9654;</span>
-              Run preview
-            </button>
-          </div>
-        </header>
+          <label>Notes<textarea id="nodeNotes" rows="3"></textarea></label>
+          <div id="nodeConfig"></div>
+        </form>
+      </section>
 
-        <section class="board-wrap" aria-label="Workflow canvas">
-          <div class="board-toolbar">
-            <div class="status-pill">
-              <span class="status-dot"></span>
-              <span id="nodeCount">0 nodes</span>
-            </div>
-            <div class="hint">Drag nodes, tune gates, then run the workflow preview.</div>
-          </div>
-          <div class="board" id="board">
-            <svg class="connections" id="connections" aria-hidden="true"></svg>
-            <div class="nodes" id="nodes"></div>
-          </div>
-        </section>
-      </main>
+      <section class="panel run-panel">
+        <div class="panel-heading">
+          <h2>Execution</h2>
+          <span id="runState" class="run-state">Idle</span>
+        </div>
+        <ol id="runLog" class="run-log"></ol>
+      </section>
 
-      <aside class="inspector" aria-label="Selected node settings">
-        <section class="panel inspector-card">
-          <div class="inspector-empty" id="inspectorEmpty">
-            <div class="empty-mark" aria-hidden="true">*</div>
-            <h2>Select a node</h2>
-            <p>Choose a node to edit its tool, runbook notes, priority, and execution mode.</p>
-          </div>
-
-          <form class="inspector-form hidden" id="inspectorForm">
-            <div class="panel-heading">
-              <h2>Node Details</h2>
-              <button type="button" class="icon-button danger" id="deleteNode" title="Delete node" aria-label="Delete node">
-                <span aria-hidden="true">&#215;</span>
-              </button>
-            </div>
-
-            <label>
-              Name
-              <input id="nodeName" name="name" autocomplete="off" />
-            </label>
-
-            <label>
-              Channel
-              <select id="nodeChannel" name="channel">
-                <option>Datadog</option>
-                <option>Docker</option>
-                <option>GitHub</option>
-                <option>Grafana</option>
-                <option>Jira</option>
-                <option>Linear</option>
-                <option>PagerDuty</option>
-                <option>Slack</option>
-                <option>Terraform</option>
-                <option>Vercel</option>
-                <option>Calendar</option>
-                <option>Chat</option>
-                <option>Email</option>
-                <option>Notion</option>
-                <option>Sheets</option>
-                <option>SMS</option>
-                <option>Todo</option>
-              </select>
-            </label>
-
-            <label>
-              Runbook Notes
-              <textarea id="nodeNotes" name="notes" rows="6"></textarea>
-            </label>
-
-            <div class="settings-grid">
-              <label>
-                Priority
-                <select id="nodePriority" name="priority">
-                  <option>Low</option>
-                  <option>Normal</option>
-                  <option>High</option>
-                  <option>Critical</option>
-                </select>
-              </label>
-
-              <label>
-                Mode
-                <select id="nodeMode" name="mode">
-                  <option>Manual</option>
-                  <option>Auto</option>
-                  <option>Approval</option>
-                  <option>Rollback</option>
-                </select>
-              </label>
-            </div>
-          </form>
-        </section>
-
-        <section class="panel run-panel">
-          <div class="panel-heading">
-            <h2>Preview</h2>
-            <span id="runState" class="run-state">Idle</span>
-          </div>
-          <ol id="runLog" class="run-log"></ol>
-        </section>
-
-        <section class="panel chat-panel">
-          <div class="panel-heading">
-            <h2>Chat Trigger</h2>
-            <span class="chat-badge" id="chatBadge"><span aria-hidden="true"></span>Live</span>
-          </div>
-          <div id="chatLog" class="chat-log"></div>
-          <form id="chatForm" class="chat-form" autocomplete="off">
-            <input
-              id="chatInput"
-              type="text"
-              placeholder="run / load incident / add deploy / help"
-            />
-            <button type="submit" class="chat-send-btn" aria-label="Send message">&#8593;</button>
-          </form>
-        </section>
-      </aside>
-    </div>
-
-    <script src="app.js"></script>
-  </body>
+      <section class="panel chat-panel">
+        <div class="panel-heading">
+          <h2>Chat</h2>
+          <span class="chat-badge"><span aria-hidden="true"></span>Live</span>
+        </div>
+        <div id="chatLog" class="chat-log"></div>
+        <form id="chatForm" class="chat-form" autocomplete="off">
+          <input id="chatInput" type="text" placeholder="run / add http / help" />
+          <button type="submit" class="chat-send-btn" aria-label="Send">&#8593;</button>
+        </form>
+      </section>
+    </aside>
+  </div>
+  <script src="app.js"></script>
+</body>
 </html>
