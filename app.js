@@ -1,9 +1,20 @@
 const API = "http://localhost:3099";
 const NODE_WIDTH = 340;
 const NODE_MID_Y = 81;
+let connected = false;
 
-let blockTypes = [];
-let templates = [];
+let blockTypes = [
+  { type: "trigger", name: "Trigger", icon: "IN", color: "#ed4f8f", config: [{ key: "triggerType", label: "Type", type: "select", options: ["Manual", "Webhook", "Schedule"], default: "Manual" }], defaults: { channel: "Manual", priority: "Normal", mode: "Auto" } },
+  { type: "http", name: "HTTP Request", icon: "HTTP", color: "#6f7dfb", config: [{ key: "url", label: "URL", type: "string", default: "https://api.example.com" }, { key: "method", label: "Method", type: "select", options: ["GET", "POST", "PUT", "PATCH", "DELETE"], default: "GET" }, { key: "headers", label: "Headers", type: "code", default: "{}" }, { key: "body", label: "Body", type: "code", default: "{}" }], defaults: { channel: "API", priority: "Normal", mode: "Auto" } },
+  { type: "code", name: "Code", icon: "</>", color: "#13a68f", config: [{ key: "code", label: "JavaScript", type: "code", default: "return { result: data };" }], defaults: { channel: "JS", priority: "Normal", mode: "Auto" } },
+  { type: "delay", name: "Delay", icon: "WAIT", color: "#f3ae3d", config: [{ key: "duration", label: "ms", type: "number", default: 1000 }], defaults: { channel: "Timer", priority: "Low", mode: "Auto" } },
+  { type: "filter", name: "Filter", icon: "IF", color: "#2f2634", config: [{ key: "condition", label: "Condition", type: "code", default: "return data !== null;" }], defaults: { channel: "Logic", priority: "Normal", mode: "Auto" } },
+  { type: "webhook", name: "Webhook", icon: "WEB", color: "#ed4f8f", config: [{ key: "method", label: "Method", type: "select", options: ["GET", "POST", "PUT", "PATCH", "DELETE"], default: "POST" }], defaults: { channel: "Webhook", priority: "Normal", mode: "Auto" } },
+  { type: "schedule", name: "Schedule", icon: "CLOCK", color: "#ed4f8f", config: [{ key: "cron", label: "Cron", type: "string", default: "*/5 * * * *" }], defaults: { channel: "Cron", priority: "Normal", mode: "Auto" } },
+  { type: "email", name: "Send Email", icon: "@", color: "#c47bf0", config: [{ key: "to", label: "To", type: "string", default: "user@example.com" }, { key: "subject", label: "Subject", type: "string", default: "Hello" }, { key: "body", label: "Body", type: "code", default: "Workflow ran!" }], defaults: { channel: "Email", priority: "Normal", mode: "Manual" } },
+];
+
+let localDb = JSON.parse(localStorage.getItem("roseops_workflows") || "[]");
 let currentWorkflowId = null;
 let nodes = [];
 let connections = [];
@@ -13,161 +24,137 @@ let connectionDrag = null;
 let executionResults = {};
 let webhookInfo = null;
 let saveTimeout = null;
+let runTimer = null;
 
-const els = {
-  templateList: document.querySelector("#templateList"),
-  blockPalette: document.querySelector("#blockPalette"),
-  flowTitle: document.querySelector("#flowTitle"),
-  nodeCount: document.querySelector("#nodeCount"),
-  board: document.querySelector("#board"),
-  nodes: document.querySelector("#nodes"),
-  connections: document.querySelector("#connections"),
-  inspectorEmpty: document.querySelector("#inspectorEmpty"),
-  inspectorForm: document.querySelector("#inspectorForm"),
-  nodeName: document.querySelector("#nodeName"),
-  nodeChannel: document.querySelector("#nodeChannel"),
-  nodeNotes: document.querySelector("#nodeNotes"),
-  nodePriority: document.querySelector("#nodePriority"),
-  nodeMode: document.querySelector("#nodeMode"),
-  deleteNode: document.querySelector("#deleteNode"),
-  resetFlow: document.querySelector("#resetFlow"),
-  autoArrange: document.querySelector("#autoArrange"),
-  runFlow: document.querySelector("#runFlow"),
-  runLog: document.querySelector("#runLog"),
-  runState: document.querySelector("#runState"),
-  chatForm: document.querySelector("#chatForm"),
-  chatInput: document.querySelector("#chatInput"),
-  chatLog: document.querySelector("#chatLog"),
-  workflowList: document.querySelector("#workflowList"),
-  newWorkflow: document.querySelector("#newWorkflow"),
-  nodeConfig: document.querySelector("#nodeConfig"),
-};
-
-async function init() {
-  await loadBlockTypes();
-  renderPalette();
-  await loadWorkflowList();
-  setupSSE();
+const els = {};
+function initEls() {
+  const ids = ["templateList","blockPalette","flowTitle","nodeCount","board","nodes","connections","inspectorEmpty","inspectorForm","nodeName","nodeChannel","nodeNotes","nodePriority","nodeMode","deleteNode","resetFlow","autoArrange","runFlow","runLog","runState","chatForm","chatInput","chatLog","workflowList","newWorkflow","nodeConfig"];
+  ids.forEach(id => els[id] = document.querySelector("#" + id));
 }
 
-async function loadBlockTypes() {
+async function init() {
+  initEls();
+
+  // Set up event listeners
+  els.nodeName.addEventListener("input", (e) => updateSelected("title", e.target.value));
+  els.nodeChannel.addEventListener("change", (e) => updateSelected("channel", e.target.value));
+  els.nodeNotes.addEventListener("input", (e) => updateSelected("notes", e.target.value));
+  els.nodePriority.addEventListener("change", (e) => updateSelected("priority", e.target.value));
+  els.nodeMode.addEventListener("change", (e) => updateSelected("mode", e.target.value));
+  els.deleteNode.addEventListener("click", deleteSelected);
+  els.resetFlow.addEventListener("click", () => { if (currentWorkflowId) loadWorkflow(currentWorkflowId); });
+  els.autoArrange.addEventListener("click", autoArrange);
+  els.runFlow.addEventListener("click", runFlow);
+  els.nodes.addEventListener("pointerdown", (event) => {
+    const outputHandle = event.target.closest(".node-handle-output");
+    if (outputHandle) { event.stopPropagation(); startConnectionDrag(event, outputHandle); }
+  });
+  els.chatForm.addEventListener("submit", (e) => {
+    e.preventDefault(); const value = els.chatInput.value; els.chatInput.value = ""; handleChatCommand(value);
+  });
+  els.newWorkflow.addEventListener("click", async () => {
+    const name = prompt("Workflow name:") || "Untitled";
+    const desc = prompt("Description (optional):") || "";
+    await createWorkflow(name, desc);
+    addChatMessage("bot", `Created "${name}".`);
+  });
+
   try {
-    const res = await fetch(`${API}/api/node-types`);
-    blockTypes = await res.json();
-  } catch {
-    blockTypes = [
-      { type: "trigger", name: "Trigger", icon: "IN", color: "#ed4f8f", config: [], defaults: {} },
-      { type: "http", name: "HTTP Request", icon: "HTTP", color: "#6f7dfb", config: [], defaults: {} },
-      { type: "code", name: "Code", icon: "</>", color: "#13a68f", config: [], defaults: {} },
-      { type: "delay", name: "Delay", icon: "WAIT", color: "#f3ae3d", config: [], defaults: {} },
-      { type: "filter", name: "Filter", icon: "IF", color: "#2f2634", config: [], defaults: {} },
-      { type: "webhook", name: "Webhook", icon: "WEB", color: "#ed4f8f", config: [], defaults: {} },
-      { type: "schedule", name: "Schedule", icon: "CLOCK", color: "#ed4f8f", config: [], defaults: {} },
-      { type: "email", name: "Send Email", icon: "@", color: "#c47bf0", config: [], defaults: {} },
-    ];
-  }
+    const res = await fetch(`${API}/api/node-types`, { signal: AbortSignal.timeout(1500) });
+    if (res.ok) {
+      connected = true;
+      const serverTypes = await res.json();
+      if (serverTypes?.length) blockTypes = serverTypes;
+    }
+  } catch {}
+  if (connected) addChatMessage("bot", "Connected — workflows persist in SQLite");
+  else addChatMessage("bot", "Offline mode — workflows saved in browser localStorage");
+  renderPalette();
+  await loadWorkflowList();
+  if (connected) setupSSE();
 }
 
 function setupSSE() {
+  if (!connected) return;
   const evt = new EventSource(`${API}/api/events`);
   evt.onmessage = (e) => {
     const data = JSON.parse(e.data);
     switch (data.type) {
       case "execution_start":
         els.runState.textContent = "Running";
-        els.runLog.innerHTML = `<li class="active">Workflow started (${data.trigger})</li>`;
-        break;
+        els.runLog.innerHTML = `<li class="active">▶ Workflow started (${data.trigger})</li>`; break;
       case "node_start":
         const li = document.createElement("li");
-        li.textContent = `▶ ${data.nodeName}`;
-        li.className = "active";
-        els.runLog.appendChild(li);
-        break;
+        li.textContent = `▶ ${data.nodeName}`; li.className = "active"; els.runLog.appendChild(li); break;
       case "node_end":
         const last = els.runLog.lastElementChild;
-        if (last) { last.className = "completed"; last.textContent = `✓ ${data.nodeName}`; }
-        break;
+        if (last) { last.className = "completed"; last.textContent = `✓ ${data.nodeName}`; } break;
       case "node_error":
         const err = els.runLog.lastElementChild;
-        if (err) { err.className = "error"; err.textContent = `✗ ${data.nodeName}: ${data.error}`; }
-        break;
+        if (err) { err.className = "error"; err.textContent = `✗ ${data.nodeName}: ${data.error}`; } break;
       case "execution_end":
         els.runState.textContent = data.status === "success" ? "Complete" : "Error";
         executionResults = data.nodeResults || {};
         if (data.status === "error" && data.error) {
           const e = document.createElement("li");
-          e.className = "error";
-          e.textContent = `Error: ${data.error}`;
-          els.runLog.appendChild(e);
+          e.className = "error"; e.textContent = `Error: ${data.error}`; els.runLog.appendChild(e);
         }
-        break;
+        renderFlow(); break;
     }
   };
 }
 
+function saveLocalDb() {
+  localStorage.setItem("roseops_workflows", JSON.stringify(localDb));
+}
+
 async function loadWorkflowList() {
-  try {
-    const res = await fetch(`${API}/api/workflows`);
-    const workflows = await res.json();
-    els.workflowList.innerHTML = "";
-    for (const wf of workflows) {
-      const btn = document.createElement("button");
-      btn.className = `template-card${wf.id === currentWorkflowId ? " active" : ""}`;
-      btn.innerHTML = `<span class="tile-icon" style="background:#ed4f8f">${wf.name.slice(0, 2).toUpperCase()}</span><span><strong>${escapeHtml(wf.name)}</strong><span>${escapeHtml(wf.description || "")}</span></span>`;
-      btn.addEventListener("click", () => loadWorkflow(wf.id));
-      els.workflowList.appendChild(btn);
-    }
-    if (workflows.length > 0 && !currentWorkflowId) {
-      await loadWorkflow(workflows[0].id);
-    } else if (workflows.length === 0) {
-      await createWorkflow("Release Train", "CI/CD workflow");
-    }
-  } catch {
-    await createWorkflow("Release Train", "CI/CD workflow");
+  els.workflowList.innerHTML = "";
+  let workflows = [];
+  if (connected) {
+    try { const res = await fetch(`${API}/api/workflows`); if (res.ok) workflows = await res.json(); } catch {}
   }
+  if (!workflows?.length) workflows = localDb;
+  for (const wf of workflows) {
+    const btn = document.createElement("button");
+    btn.className = `template-card${wf.id === currentWorkflowId ? " active" : ""}`;
+    btn.innerHTML = `<span class="tile-icon" style="background:#ed4f8f">${(wf.name || "?").slice(0,2).toUpperCase()}</span><span><strong>${escapeHtml(wf.name)}</strong><span>${escapeHtml(wf.description||"")}</span></span>`;
+    btn.addEventListener("click", () => loadWorkflow(wf.id));
+    els.workflowList.appendChild(btn);
+  }
+  if (workflows.length > 0 && !currentWorkflowId) await loadWorkflow(workflows[0].id);
+  else if (workflows.length === 0) await createWorkflow("Release Train", "CI/CD with approval, deploy, and observability");
 }
 
 async function createWorkflow(name, description) {
-  const res = await fetch(`${API}/api/workflows`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, description, nodes: [], connections: [] }),
-  });
-  const data = await res.json();
-  currentWorkflowId = data.id;
-  nodes = [];
-  connections = [];
-  selectedNodeId = null;
-  executionResults = {};
-  webhookInfo = null;
-  els.flowTitle.textContent = name;
-  renderFlow();
-  await loadWorkflowList();
+  let id = crypto.randomUUID();
+  if (connected) {
+    try {
+      const res = await fetch(`${API}/api/workflows`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, description, nodes: [], connections: [] }) });
+      if (res.ok) { const d = await res.json(); id = d.id; }
+    } catch { connected = false; }
+  }
+  if (!connected) {
+    localDb.push({ id, name, description, nodes: [], connections: [], created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+    saveLocalDb();
+  }
+  currentWorkflowId = id; nodes = []; connections = []; selectedNodeId = null; executionResults = {}; webhookInfo = null;
+  els.flowTitle.textContent = name; clearRun(); renderFlow(); await loadWorkflowList();
 }
 
 async function loadWorkflow(id) {
-  try {
-    const res = await fetch(`${API}/api/workflows/${id}`);
-    const wf = await res.json();
-    currentWorkflowId = wf.id;
-    nodes = wf.nodes || [];
-    connections = wf.connections || [];
-    selectedNodeId = nodes[0]?.id || null;
-    executionResults = {};
-    els.flowTitle.textContent = wf.name;
-    clearRun();
-    renderFlow();
-    await loadWorkflowList();
-    // Load webhook info
-    const whRes = await fetch(`${API}/api/webhooks/${id}`);
-    if (whRes.ok) {
-      const wh = await whRes.json();
-      webhookInfo = wh;
-    } else {
-      webhookInfo = null;
-    }
-  } catch (err) {
-    addChatMessage("bot", `Error loading workflow: ${err.message}`);
+  let wf = null;
+  if (connected) {
+    try { const res = await fetch(`${API}/api/workflows/${id}`); if (res.ok) wf = await res.json(); } catch {}
+  }
+  if (!wf) wf = localDb.find(w => w.id === id);
+  if (!wf) { await createWorkflow("Untitled", ""); return; }
+  currentWorkflowId = wf.id; nodes = wf.nodes || []; connections = wf.connections || [];
+  selectedNodeId = nodes[0]?.id ?? null; executionResults = {};
+  els.flowTitle.textContent = wf.name || "Untitled"; clearRun(); renderFlow(); await loadWorkflowList();
+  webhookInfo = null;
+  if (connected) {
+    try { const whRes = await fetch(`${API}/api/webhooks/${id}`); if (whRes.ok && whRes.status !== 204) webhookInfo = await whRes.json(); } catch {}
   }
 }
 
@@ -175,13 +162,14 @@ function saveWorkflow() {
   if (!currentWorkflowId) return;
   if (saveTimeout) clearTimeout(saveTimeout);
   saveTimeout = setTimeout(async () => {
-    try {
-      await fetch(`${API}/api/workflows/${currentWorkflowId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nodes, connections }),
-      });
-    } catch {}
+    if (connected) {
+      try { await fetch(`${API}/api/workflows/${currentWorkflowId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nodes, connections }) }); } catch { connected = false; }
+    }
+    if (!connected) {
+      const idx = localDb.findIndex(w => w.id === currentWorkflowId);
+      if (idx >= 0) { localDb[idx].nodes = nodes; localDb[idx].connections = connections; localDb[idx].updated_at = new Date().toISOString(); }
+      saveLocalDb();
+    }
   }, 500);
 }
 
@@ -507,6 +495,10 @@ function autoArrange() {
 
 async function runFlow() {
   if (!currentWorkflowId) return;
+  if (!connected) {
+    addChatMessage("bot", "Start the server with 'npm start' to execute workflows");
+    return;
+  }
   clearRun(false);
   els.runState.textContent = "Starting...";
   try {
@@ -569,36 +561,6 @@ function handleChatCommand(raw) {
     addChatMessage("bot", `Unknown. Type "help".`);
   }
 }
-
-// ===== EVENT LISTENERS =====
-els.nodeName.addEventListener("input", (e) => updateSelected("title", e.target.value));
-els.nodeChannel.addEventListener("change", (e) => updateSelected("channel", e.target.value));
-els.nodeNotes.addEventListener("input", (e) => updateSelected("notes", e.target.value));
-els.nodePriority.addEventListener("change", (e) => updateSelected("priority", e.target.value));
-els.nodeMode.addEventListener("change", (e) => updateSelected("mode", e.target.value));
-els.deleteNode.addEventListener("click", deleteSelected);
-els.resetFlow.addEventListener("click", () => { if (currentWorkflowId) loadWorkflow(currentWorkflowId); });
-els.autoArrange.addEventListener("click", autoArrange);
-els.runFlow.addEventListener("click", runFlow);
-
-els.nodes.addEventListener("pointerdown", (event) => {
-  const outputHandle = event.target.closest(".node-handle-output");
-  if (outputHandle) { event.stopPropagation(); startConnectionDrag(event, outputHandle); }
-});
-
-els.chatForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const value = els.chatInput.value;
-  els.chatInput.value = "";
-  handleChatCommand(value);
-});
-
-els.newWorkflow.addEventListener("click", async () => {
-  const name = prompt("Workflow name:") || "Untitled";
-  const desc = prompt("Description (optional):") || "";
-  await createWorkflow(name, desc);
-  addChatMessage("bot", `Created "${name}".`);
-});
 
 // ===== BOOT =====
 init();
