@@ -1,6 +1,6 @@
 # RoseOps Studio
 
-Real workflow automation engine with a feminine devops twist. 
+Real workflow automation engine with a feminine devops twist.   
 
 Like n8n, but make it girl devops. Actually executes workflows — not a visualizer.
 
