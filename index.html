@@ -30,32 +30,34 @@
 
       <section class="panel panel-workflows">
         <div class="panel-heading">
-          <h2>Workflows</h2>
-          <button class="icon-button" id="newWorkflow" title="New or pick a starter">+</button>
+          <h2>Your workflows</h2>
+          <button class="ghost-button add-workflow-btn" id="newWorkflow" title="Add a workflow">+ Add</button>
         </div>
-        <p class="panel-hint">Click a workflow to open · hit + to pick a starter</p>
+        <p class="panel-hint">Tap a workflow to open it</p>
         <div class="template-list" id="workflowList"></div>
       </section>
 
       <section class="panel">
         <div class="panel-heading">
-          <h2>Starters</h2>
-          <button class="icon-button" id="browseTemplates" title="Browse starters">&#x25BC;</button>
+          <h2>Templates</h2>
+          <button class="icon-button" id="browseTemplates" title="Jump to templates">&#x25BC;</button>
         </div>
-        <p class="panel-hint">One-click add another copy to your library</p>
+        <p class="panel-hint">Ready-made flows — tap to add one</p>
         <div class="template-list" id="templateList"></div>
       </section>
 
       <section class="panel">
         <div class="panel-heading">
-          <h2>Credentials</h2>
-          <button class="icon-button" id="newCredential" title="Add credential">+</button>
+          <h2>Secrets vault</h2>
+          <button class="ghost-button add-workflow-btn" id="newCredential" title="Add a secret">+ Add</button>
         </div>
+        <p class="panel-hint">API keys &amp; passwords — stored encrypted</p>
         <div class="template-list" id="credentialList"></div>
       </section>
 
       <section class="panel">
-        <h2>Add Node</h2>
+        <h2>Steps to add</h2>
+        <p class="panel-hint">Drag any step onto the canvas →</p>
         <div class="block-palette" id="blockPalette"></div>
       </section>
     </aside>
@@ -63,17 +65,17 @@
     <main class="workspace">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Automation Canvas</p>
+          <p class="eyebrow">Your workflow</p>
           <h2 id="flowTitle">Workflow</h2>
           <div class="workspace-meta">
             <span id="connectionStatus">connecting</span>
             <span id="workflowVersion">v1</span>
-            <span id="nodeCountMeta">0 nodes</span>
+            <span id="nodeCountMeta">0 steps</span>
           </div>
         </div>
         <div class="topbar-actions">
-          <button class="ghost-button" id="autoArrange">Auto arrange</button>
-          <button class="primary-button" id="runFlow"><span aria-hidden="true">&#x25B6;</span>Execute</button>
+          <button class="ghost-button" id="autoArrange">Tidy up layout</button>
+          <button class="primary-button" id="runFlow"><span aria-hidden="true">&#x25B6;</span> Run workflow</button>
         </div>
       </header>
 
@@ -81,11 +83,19 @@
         <div class="board-toolbar">
           <div class="status-pill">
             <span class="status-dot"></span>
-            <span id="nodeCount">0 nodes</span>
+            <span id="nodeCount">0 steps</span>
           </div>
-          <div class="hint">&#x2726; drag nodes &middot; connect handles &middot; hit Execute</div>
+          <div class="hint">Drag steps &middot; connect the dots &middot; run when ready</div>
         </div>
         <div class="board" id="board">
+          <div class="canvas-empty hidden" id="canvasEmpty">
+            <div class="canvas-empty-card">
+              <div class="canvas-empty-icon" aria-hidden="true">✿</div>
+              <h3>Nothing here yet</h3>
+              <p>Drag a step from <strong>Steps to add</strong> on the left, or start from a ready-made template.</p>
+              <button type="button" class="primary-button" id="canvasPickStarter">Browse templates</button>
+            </div>
+          </div>
           <svg class="connections" id="connections" aria-hidden="true"></svg>
           <div class="nodes" id="nodes"></div>
         </div>
@@ -93,16 +103,29 @@
     </main>
 
     <aside class="inspector" aria-label="Selected node settings">
+      <section class="panel guide-panel" id="guidePanel">
+        <div class="panel-heading">
+          <h2>Getting started</h2>
+          <button type="button" class="icon-button" id="dismissGuide" title="Hide guide">&#215;</button>
+        </div>
+        <ol class="guide-steps" id="guideSteps">
+          <li class="guide-step" data-step="workflow"><span class="guide-check">1</span> Pick a workflow on the left</li>
+          <li class="guide-step" data-step="nodes"><span class="guide-check">2</span> Drag steps onto the canvas</li>
+          <li class="guide-step" data-step="connect"><span class="guide-check">3</span> Connect the dots between steps</li>
+          <li class="guide-step" data-step="run"><span class="guide-check">4</span> Hit <strong>Run workflow</strong></li>
+        </ol>
+      </section>
+
       <section class="panel inspector-card">
         <div class="inspector-empty" id="inspectorEmpty">
           <div class="empty-mark" aria-hidden="true">&#x2739;</div>
-          <h2>Select a node</h2>
-          <p>Choose a node to edit its settings, config, and execution results.</p>
+          <h2>Tap a step</h2>
+          <p>Click any step on the canvas to edit its name, settings, and connections.</p>
         </div>
 
         <form class="inspector-form hidden" id="inspectorForm">
           <div class="panel-heading">
-            <h2>Node Details</h2>
+            <h2>Step settings</h2>
             <button type="button" class="icon-button danger" id="deleteNode" title="Delete node">&#215;</button>
           </div>
           <label>Name<input id="nodeName" name="name" autocomplete="off" /></label>
@@ -126,12 +149,12 @@
 
       <section class="panel chat-panel">
         <div class="panel-heading">
-          <h2>Chat</h2>
-          <span class="chat-badge"><span aria-hidden="true"></span>Live</span>
+          <h2>Assistant</h2>
+          <span class="chat-badge"><span aria-hidden="true"></span>Here to help</span>
         </div>
         <div id="chatLog" class="chat-log"></div>
         <form id="chatForm" class="chat-form" autocomplete="off">
-          <input id="chatInput" type="text" placeholder="run / add http / help" />
+          <input id="chatInput" type="text" placeholder="Try: help, run, add email" />
           <button type="submit" class="chat-send-btn" aria-label="Send">&#8593;</button>
         </form>
       </section>
@@ -156,6 +179,8 @@
       <div id="modalBody"></div>
     </div>
   </div>
+
+  <div id="toastHost" class="toast-host" aria-live="polite" aria-atomic="true"></div>
 
   <script src="app.js"></script>
 </body>
