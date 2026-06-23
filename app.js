@@ -35,12 +35,13 @@ const CREDENTIAL_PRESETS = {
   google_gemini: { label: "Google Gemini", name: "My Gemini Key", hint: "Get a key at aistudio.google.com/apikey" },
   deepseek_api: { label: "DeepSeek", name: "My DeepSeek Key", hint: "Get a key at platform.deepseek.com" },
   xai_grok: { label: "xAI Grok", name: "My Grok Key", hint: "Get a key at console.x.ai" },
+  ollama_local: { label: "Ollama (local)", name: "My PC — Ollama", hint: "Free LLMs on your computer — install via Setup guide" },
 };
 
 let localCredentialList = [];
 let blockTypes = [
   { type: "trigger", name: "Trigger", icon: "\u2726", color: "#e8739a", config: [{ key: "triggerType", label: "Type", type: "select", options: ["Manual", "Webhook", "Schedule"], default: "Manual" }], defaults: { channel: "Manual", priority: "Normal", mode: "Auto" } },
-  { type: "llm", name: "AI Chat", icon: "AI", color: "#7c5cff", config: [{ key: "provider", label: "Provider", type: "select", options: ["openai", "google", "deepseek", "xai"], default: "openai" }, { key: "credentialId", label: "API Key", type: "credential", credentialTypes: ["openai_api", "google_gemini", "deepseek_api", "xai_grok", "bearer_token"], default: "" }, { key: "model", label: "Model", type: "string", default: "gpt-4o-mini" }, { key: "systemPrompt", label: "System prompt", type: "code", default: "You are a helpful assistant." }, { key: "userPrompt", label: "User prompt", type: "code", default: "{{message}}" }, { key: "temperature", label: "Temperature", type: "number", default: 0.7 }], defaults: { channel: "LLM", priority: "Normal", mode: "Auto" } },
+  { type: "llm", name: "AI Chat", icon: "AI", color: "#7c5cff", config: [{ key: "provider", label: "Provider", type: "select", options: ["openai", "google", "deepseek", "xai", "ollama"], default: "openai" }, { key: "credentialId", label: "API Key", type: "credential", credentialTypes: ["openai_api", "google_gemini", "deepseek_api", "xai_grok", "ollama_local", "bearer_token"], default: "" }, { key: "model", label: "Model", type: "string", default: "gpt-4o-mini" }, { key: "systemPrompt", label: "System prompt", type: "code", default: "You are a helpful assistant." }, { key: "userPrompt", label: "User prompt", type: "code", default: "{{message}}" }, { key: "temperature", label: "Temperature", type: "number", default: 0.7 }], defaults: { channel: "LLM", priority: "Normal", mode: "Auto" } },
   { type: "http", name: "HTTP Request", icon: "HTTP", color: "#b8a9d4", config: [{ key: "url", label: "URL", type: "string", default: "https://api.example.com" }, { key: "method", label: "Method", type: "select", options: ["GET", "POST", "PUT", "PATCH", "DELETE"], default: "GET" }, { key: "headers", label: "Headers", type: "code", default: "{}" }, { key: "body", label: "Body", type: "code", default: "{}" }], defaults: { channel: "API", priority: "Normal", mode: "Auto" } },
   { type: "code", name: "Code", icon: "</>", color: "#a8d8c8", config: [{ key: "code", label: "JavaScript", type: "code", default: "return { result: data };" }], defaults: { channel: "JS", priority: "Normal", mode: "Auto" } },
   { type: "delay", name: "Delay", icon: "WAIT", color: "#e8c87a", config: [{ key: "duration", label: "ms", type: "number", default: 1000 }], defaults: { channel: "Timer", priority: "Low", mode: "Auto" } },
@@ -122,6 +123,7 @@ async function init() {
     if (!btn) return;
     if (btn.dataset.guideAction === "engine") showSetupGuideModal("engine");
     if (btn.dataset.guideAction === "grok") showSetupGuideModal("keys");
+    if (btn.dataset.guideAction === "local") showSetupGuideModal("local");
   });
   els.keyQuickGrid?.querySelectorAll("[data-provider]").forEach((btn) => {
     btn.addEventListener("click", () => showQuickCredentialModal(btn.dataset.provider));
@@ -209,6 +211,23 @@ function showPagesDeployBanner() {
 
 const REPO_CLONE_URL = "https://github.com/DaCameraGirl/RoseOps-Studio.git";
 
+const LOCAL_LLM_POWERSHELL = `# 1) Install Ollama (free local LLM runner) — run in PowerShell:
+winget install Ollama.Ollama
+
+# If winget isn't available, use the official installer instead:
+# irm https://ollama.com/install.ps1 | iex
+
+# 2) Open a NEW PowerShell window, then pull a free model (pick one):
+ollama pull llama3.2
+# ollama pull mistral
+# ollama pull phi3
+
+# 3) Confirm Ollama is running and see your models:
+ollama list
+
+# 4) Quick test (optional):
+ollama run llama3.2 "Say hello in one sentence"`;
+
 function getSetupGuideBodyHtml() {
   const pagesNote = IS_GITHUB_PAGES
     ? `<p class="onboarding-subtitle">You're on <strong>GitHub Pages</strong> — great for browsing and building. Running workflows needs the engine (below).</p>`
@@ -239,7 +258,17 @@ function getSetupGuideBodyHtml() {
       <div class="howto-step"><span class="howto-step-num">3</span><span><strong>Add in RoseOps</strong><span>Left sidebar → <strong>API keys</strong> → tap <strong>Grok</strong> (or OpenAI / Gemini / DeepSeek) → paste key → save.</span></span></div>
       <div class="howto-step"><span class="howto-step-num">4</span><span><strong>Use in a workflow</strong><span>Drag <strong>AI Chat</strong> onto the canvas → set Provider to <strong>xai</strong> → pick your Grok key → set model (e.g. <code>grok-2</code>) → run.</span></span></div>
     </div>
-    <p class="onboarding-subtitle">Assistant shortcuts: <code>connect</code> · <code>grok</code> · <code>keys</code> · <code>help</code></p>`;
+    <h3 class="howto-section-title" id="setup-local-llm">3 · Free local LLMs (PowerShell + Ollama)</h3>
+    <p class="onboarding-subtitle">Run models on <strong>your PC</strong> — no cloud API bill. RoseOps talks to <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a> at <code>http://localhost:11434</code> (OpenAI-compatible).</p>
+    <div class="howto-steps">
+      <div class="howto-step"><span class="howto-step-num">1</span><span><strong>Install with PowerShell</strong><span>Open <strong>PowerShell</strong> (not CMD) and run the commands below. Ollama starts automatically after install.</span></span></div>
+      <div class="howto-step"><span class="howto-step-num">2</span><span><strong>Download a model</strong><span><code>ollama pull llama3.2</code> downloads a free model (a few GB). Other options: <code>mistral</code>, <code>phi3</code>, <code>gemma2</code>.</span></span></div>
+      <div class="howto-step"><span class="howto-step-num">3</span><span><strong>Add in RoseOps</strong><span>Left sidebar → <strong>API keys</strong> → <strong>Local</strong> → save (default URL is fine).</span></span></div>
+      <div class="howto-step"><span class="howto-step-num">4</span><span><strong>Use in a workflow</strong><span><strong>AI Chat</strong> step → Provider <strong>ollama</strong> → pick your Local key → Model matches what you pulled (e.g. <code>llama3.2</code>) → <strong>Run workflow</strong>.</span></span></div>
+    </div>
+    <pre class="howto-code" id="localLlmPs1">${LOCAL_LLM_POWERSHELL}</pre>
+    <p class="onboarding-subtitle">Requires the RoseOps <strong>engine</strong> running locally (<code>npm start</code>) so it can reach Ollama on your machine.</p>
+    <p class="onboarding-subtitle">Assistant shortcuts: <code>connect</code> · <code>grok</code> · <code>ollama</code> · <code>local</code> · <code>keys</code> · <code>help</code></p>`;
 }
 
 function renderSetupDrawer() {
@@ -255,17 +284,20 @@ function renderSetupDrawer() {
     <ol class="setup-mini-steps">
       <li><strong>Engine:</strong> clone repo → <code>npm start</code> → <code>localhost:3099</code></li>
       <li><strong>Grok:</strong> <a href="https://console.x.ai" target="_blank" rel="noopener">console.x.ai</a> → API keys → tap <strong>Grok</strong> in sidebar</li>
-      <li><strong>Workflow:</strong> AI Chat step → provider <strong>xai</strong> → your key</li>
+      <li><strong>Local LLM:</strong> PowerShell → <code>winget install Ollama.Ollama</code> → <code>ollama pull llama3.2</code></li>
+      <li><strong>Workflow:</strong> AI Chat → provider <strong>ollama</strong> or <strong>xai</strong></li>
     </ol>
     <p class="setup-keys-note">${keyCount ? `${keyCount} API key${keyCount === 1 ? "" : "s"} saved` : "No API keys yet"}</p>
     <div class="setup-drawer-actions">
       <button type="button" class="ghost-button" id="drawerFullGuide">Full guide</button>
+      <button type="button" class="ghost-button" id="drawerLocalLlm">Local LLM steps</button>
       ${connected ? "" : `<button type="button" class="ghost-button" id="drawerConnectEngine">Connect engine</button>`}
-      <button type="button" class="primary-button" id="drawerAddGrok">Add Grok key</button>
+      <button type="button" class="primary-button" id="drawerAddOllama">Add Local key</button>
     </div>`;
   els.setupDrawerBody.querySelector("#drawerFullGuide")?.addEventListener("click", () => showSetupGuideModal());
+  els.setupDrawerBody.querySelector("#drawerLocalLlm")?.addEventListener("click", () => showSetupGuideModal("local"));
   els.setupDrawerBody.querySelector("#drawerConnectEngine")?.addEventListener("click", () => showConnectEngineModal());
-  els.setupDrawerBody.querySelector("#drawerAddGrok")?.addEventListener("click", () => showQuickCredentialModal("xai_grok"));
+  els.setupDrawerBody.querySelector("#drawerAddOllama")?.addEventListener("click", () => showQuickCredentialModal("ollama_local"));
 }
 
 function showSetupGuideModal(scrollTo = "") {
@@ -274,6 +306,7 @@ function showSetupGuideModal(scrollTo = "") {
     <div class="modal-actions">
       <button type="button" class="ghost-button" data-close-modal>Got it</button>
       <button type="button" class="ghost-button" id="howtoAddGrok">Add Grok key</button>
+      <button type="button" class="ghost-button" id="howtoAddOllama">Add Local (Ollama)</button>
       <button type="button" class="ghost-button" id="howtoOpenLocal">Open localhost:3099</button>
       <button type="button" class="primary-button" id="howtoConnectEngine">Connect engine</button>
     </div>`);
@@ -289,10 +322,14 @@ function showSetupGuideModal(scrollTo = "") {
     closeModal();
     showQuickCredentialModal("xai_grok");
   });
+  document.getElementById("howtoAddOllama")?.addEventListener("click", () => {
+    closeModal();
+    showQuickCredentialModal("ollama_local");
+  });
   if (scrollTo) {
     requestAnimationFrame(() => {
-      const el = document.getElementById(scrollTo === "keys" ? "setup-keys" : "setup-engine");
-      el?.scrollIntoView({ block: "start", behavior: "smooth" });
+      const targetId = scrollTo === "keys" ? "setup-keys" : scrollTo === "local" ? "setup-local-llm" : "setup-engine";
+      document.getElementById(targetId)?.scrollIntoView({ block: "start", behavior: "smooth" });
     });
   }
 }
@@ -494,7 +531,7 @@ function renderCredentialCards(list) {
   if (!els.credentialList) return;
   els.credentialList.innerHTML = "";
   if (!list.length) {
-    els.credentialList.innerHTML = `<div class="workflow-empty"><p>No API keys yet — tap <strong>OpenAI</strong>, <strong>Gemini</strong>, <strong>DeepSeek</strong>, or <strong>Grok</strong> above.</p></div>`;
+    els.credentialList.innerHTML = `<div class="workflow-empty"><p>No API keys yet — tap <strong>Local</strong> for free Ollama models, or <strong>OpenAI</strong> / <strong>Grok</strong> above. See <strong>Setup guide</strong> for PowerShell install steps.</p></div>`;
     return;
   }
   list.forEach((cred) => {
@@ -925,7 +962,7 @@ function renderInspector() {
     });
     els.nodeConfig.querySelectorAll(".cred-inline-add").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const provider = selected.type === "llm" ? { openai: "openai_api", google: "google_gemini", deepseek: "deepseek_api", xai: "xai_grok" }[selected.config?.provider] || "openai_api" : "api_key";
+        const provider = selected.type === "llm" ? { openai: "openai_api", google: "google_gemini", deepseek: "deepseek_api", xai: "xai_grok", ollama: "ollama_local" }[selected.config?.provider] || "openai_api" : "api_key";
         showQuickCredentialModal(provider);
       });
     });
@@ -1235,7 +1272,7 @@ function handleChatCommand(raw) {
     if (match) { addBlock(match.type); addChatMessage("bot", `Added ${match.name}.`); }
     else { addChatMessage("bot", `Unknown. Try: add http / add code / add delay / add webhook / add schedule / add email`); }
   } else if (lower === "help" || lower === "?") {
-    addChatMessage("bot", "Commands: run · reset · arrange · add [type] · connect · grok · keys · help | Setup guide is in the sidebar and top bar.");
+    addChatMessage("bot", "Commands: run · reset · arrange · add [type] · connect · grok · ollama · local · keys · help | Setup guide is in the sidebar.");
   } else if (lower === "connect" || lower === "engine" || lower === "setup") {
     showSetupGuideModal("engine");
   } else if (lower === "grok" || lower === "xai") {
@@ -1244,6 +1281,9 @@ function handleChatCommand(raw) {
   } else if (lower === "keys" || lower === "api") {
     showSetupGuideModal("keys");
     document.querySelector(".panel-keys")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else if (lower === "ollama" || lower === "local" || lower === "local llm") {
+    showSetupGuideModal("local");
+    showQuickCredentialModal("ollama_local");
   } else {
     addChatMessage("bot", `Unknown. Type "help".`);
   }
@@ -1311,6 +1351,9 @@ function credentialFieldsForType(type) {
     google_gemini: apiKeyField,
     deepseek_api: apiKeyField,
     xai_grok: apiKeyField,
+    ollama_local: `<p class="onboarding-subtitle">Install Ollama first — open <strong>Setup guide → Local LLM</strong> for PowerShell commands.</p>
+      <label>Ollama URL<input type="url" id="credOllamaUrl" value="http://localhost:11434/v1" placeholder="http://localhost:11434/v1" /></label>
+      <label>API key (optional)<input type="text" id="credApiKey" value="ollama" autocomplete="off" placeholder="ollama" /></label>`,
     discord_webhook: `<label>Webhook URL<input type="url" id="credUrl" required /></label>`,
     webhook_url: `<label>Webhook URL<input type="url" id="credUrl" required /></label>`,
     github_token: `<label>Personal Access Token<input type="password" id="credToken" required autocomplete="off" /></label>`,
@@ -1328,6 +1371,10 @@ function collectCredentialData(type) {
     case "google_gemini":
     case "deepseek_api":
     case "xai_grok": return { apiKey: document.getElementById("credApiKey").value.trim() };
+    case "ollama_local": return {
+      baseUrl: document.getElementById("credOllamaUrl").value.trim() || "http://localhost:11434/v1",
+      apiKey: document.getElementById("credApiKey").value.trim() || "ollama",
+    };
     case "discord_webhook":
     case "webhook_url": return { url: document.getElementById("credUrl").value.trim() };
     case "github_token":
@@ -1393,6 +1440,7 @@ function showNewCredentialModal() {
           <option value="google_gemini">Google Gemini</option>
           <option value="deepseek_api">DeepSeek</option>
           <option value="xai_grok">xAI Grok</option>
+          <option value="ollama_local">Ollama (local, free)</option>
         </optgroup>
         <optgroup label="Integrations">
           <option value="discord_webhook">Discord Webhook</option>

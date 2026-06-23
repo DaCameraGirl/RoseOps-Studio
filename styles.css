@@ -722,6 +722,26 @@ button {
   color: var(--rose);
 }
 
+.howto-code {
+  margin: 12px 0 4px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-size: 11px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.key-quick-local {
+  border-color: rgba(168, 216, 200, 0.9);
+  background: rgba(168, 216, 200, 0.15);
+}
+
 .topbar-actions {
   display: flex;
   flex-wrap: wrap;

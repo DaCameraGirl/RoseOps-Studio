@@ -70,6 +70,18 @@ Open **http://localhost:3099** — UI + execution engine together.
 
 In the app: type **`connect`** in Assistant chat, or click the connection status (● pages / ● offline).
 
+### Free local LLMs (PowerShell + Ollama)
+
+The in-app **Setup guide → section 3** has copy-paste PowerShell commands. Short version:
+
+```powershell
+winget install Ollama.Ollama
+ollama pull llama3.2
+ollama list
+```
+
+Then in RoseOps: **API keys → Local** → **AI Chat** step with provider **ollama** and model **llama3.2**. Requires the engine running locally (`npm start`).
+
 ---
 
 ## 💎 Features
