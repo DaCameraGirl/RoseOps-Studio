@@ -252,6 +252,7 @@ function setupSSE() {
     switch (data.type) {
       case "execution_start":
         els.runState.textContent = "Running";
+        document.querySelector(".board-wrap")?.classList.add("board-running");
         els.runLog.innerHTML = `<li class="active">▶ Workflow started (${data.trigger})</li>`; break;
       case "node_start":
         const li = document.createElement("li");
@@ -263,6 +264,7 @@ function setupSSE() {
         const err = els.runLog.lastElementChild;
         if (err) { err.className = "error"; err.textContent = `✗ ${friendlyError(data.error, { nodeName: data.nodeName })}`; } break;
       case "execution_end":
+        document.querySelector(".board-wrap")?.classList.remove("board-running");
         els.runState.textContent = data.status === "success" ? "Complete" : "Error";
         if (data.status === "success") {
           els.runState.classList.add("success-pulse");
@@ -508,6 +510,18 @@ function renderConnections() {
   els.connections.innerHTML = "";
 
   const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+  const grad = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+  grad.setAttribute("id", "flowGradient");
+  grad.setAttribute("x1", "0%"); grad.setAttribute("y1", "0%");
+  grad.setAttribute("x2", "100%"); grad.setAttribute("y2", "0%");
+  const stop1 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+  stop1.setAttribute("offset", "0%"); stop1.setAttribute("stop-color", "#e8739a");
+  const stop2 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+  stop2.setAttribute("offset", "50%"); stop2.setAttribute("stop-color", "#b8a9d4");
+  const stop3 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+  stop3.setAttribute("offset", "100%"); stop3.setAttribute("stop-color", "#a8d8c8");
+  grad.appendChild(stop1); grad.appendChild(stop2); grad.appendChild(stop3);
+  defs.appendChild(grad);
   const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
   marker.setAttribute("id", "arrowhead");
   marker.setAttribute("markerWidth", "10");
