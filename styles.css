@@ -1253,6 +1253,7 @@ textarea:focus {
 .onboarding-backdrop {
   position: absolute;
   inset: 0;
+  z-index: 0;
   background: rgba(58, 42, 56, 0.35);
   backdrop-filter: blur(8px);
   animation: fade-in 280ms ease;
@@ -1260,7 +1261,10 @@ textarea:focus {
 
 .onboarding-card {
   position: relative;
+  z-index: 1;
   width: min(520px, 100%);
+  max-height: min(90vh, 720px);
+  overflow: auto;
   border: 1px solid var(--line-strong);
   border-radius: 20px;
   padding: 32px 28px 28px;
@@ -1402,7 +1406,14 @@ textarea:focus {
   text-align: left;
   color: var(--ink);
   background: var(--panel);
+  cursor: pointer;
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.onboarding-choice:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
 }
 
 .onboarding-choice:hover {
