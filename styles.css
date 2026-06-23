@@ -598,6 +598,130 @@ button {
   line-height: 1.5;
 }
 
+.howto-section-title {
+  margin: 18px 0 8px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.howto-table {
+  width: 100%;
+  margin: 12px 0 4px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.howto-table th,
+.howto-table td {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.howto-table th {
+  color: var(--ink);
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.howto-table td {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.setup-drawer {
+  border-color: rgba(155, 142, 196, 0.35);
+  background: linear-gradient(180deg, #faf8ff, #f5f2fc);
+}
+
+.setup-drawer-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.setup-drawer-summary::-webkit-details-marker {
+  display: none;
+}
+
+.setup-drawer-body {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.setup-status {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.setup-status-ok {
+  border: 1px solid rgba(168, 216, 200, 0.8);
+  background: rgba(168, 216, 200, 0.15);
+  color: var(--ink);
+}
+
+.setup-status-warn {
+  border: 1px solid rgba(232, 200, 122, 0.8);
+  background: rgba(232, 200, 122, 0.12);
+  color: var(--ink);
+}
+
+.setup-mini-steps {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.setup-mini-steps li + li {
+  margin-top: 6px;
+}
+
+.setup-keys-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.setup-drawer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.setup-guide-cta {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.guide-inline-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--rose-dark);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.guide-inline-link:hover {
+  color: var(--rose);
+}
+
 .topbar-actions {
   display: flex;
   flex-wrap: wrap;

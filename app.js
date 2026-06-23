@@ -87,7 +87,7 @@ let lastConnectedPair = null;
 
 const els = {};
 function initEls() {
-  const ids = ["templateList","blockPalette","blockPaletteAi","flowTitle","nodeCount","board","nodes","connections","inspectorEmpty","inspectorForm","nodeName","nodeChannel","nodeNotes","nodePriority","nodeMode","deleteNode","resetFlow","autoArrange","fitView","runFlow","runLog","runState","chatForm","chatInput","chatLog","workflowList","newWorkflow","nodeConfig","browseTemplates","onboarding","onboardingContent","onboardingProgress","credentialList","newCredential","keyQuickGrid","modal","modalTitle","modalBody","connectionStatus","workflowVersion","nodeCountMeta","canvasEmpty","canvasPickStarter","guidePanel","guideSteps","dismissGuide"];
+  const ids = ["templateList","blockPalette","blockPaletteAi","flowTitle","nodeCount","board","nodes","connections","inspectorEmpty","inspectorForm","nodeName","nodeChannel","nodeNotes","nodePriority","nodeMode","deleteNode","resetFlow","autoArrange","fitView","runFlow","runLog","runState","chatForm","chatInput","chatLog","workflowList","newWorkflow","nodeConfig","browseTemplates","onboarding","onboardingContent","onboardingProgress","credentialList","newCredential","keyQuickGrid","modal","modalTitle","modalBody","connectionStatus","workflowVersion","nodeCountMeta","canvasEmpty","canvasPickStarter","guidePanel","guideSteps","dismissGuide","setupDrawerBody","openSetupGuide","openSetupGuideSide"];
   ids.forEach(id => els[id] = document.querySelector("#" + id));
 }
 
@@ -114,7 +114,15 @@ async function init() {
   });
   els.newWorkflow.addEventListener("click", () => showWorkflowPickerModal());
   if (els.newCredential) els.newCredential.addEventListener("click", () => showNewCredentialModal());
-  if (els.connectionStatus) els.connectionStatus.addEventListener("click", () => showHowToConnectModal());
+  if (els.connectionStatus) els.connectionStatus.addEventListener("click", () => showSetupGuideModal());
+  els.openSetupGuide?.addEventListener("click", () => showSetupGuideModal());
+  els.openSetupGuideSide?.addEventListener("click", () => showSetupGuideModal());
+  els.guideSteps?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-guide-action]");
+    if (!btn) return;
+    if (btn.dataset.guideAction === "engine") showSetupGuideModal("engine");
+    if (btn.dataset.guideAction === "grok") showSetupGuideModal("keys");
+  });
   els.keyQuickGrid?.querySelectorAll("[data-provider]").forEach((btn) => {
     btn.addEventListener("click", () => showQuickCredentialModal(btn.dataset.provider));
   });
@@ -134,6 +142,7 @@ async function init() {
   setupPaletteDropZone();
 
   await connectToServer();
+  renderSetupDrawer();
   await loadStarterCatalog();
   renderPalette();
   renderTemplates();
@@ -155,10 +164,10 @@ async function connectToServer() {
     connected = false;
     els.connectionStatus.textContent = "● pages (static)";
     showPagesDeployBanner();
-    addChatMessage("bot", "You're on GitHub Pages (preview only). Tap the status badge (● pages) or type connect for setup steps.");
+    addChatMessage("bot", "You're on GitHub Pages (preview only). Open Setup guide in the sidebar or type connect for full steps.");
     if (!sessionStorage.getItem(HOWTO_CONNECT_KEY)) {
       sessionStorage.setItem(HOWTO_CONNECT_KEY, "1");
-      setTimeout(() => showHowToConnectModal(), 600);
+      setTimeout(() => showSetupGuideModal(), 600);
     }
     return;
   }
@@ -171,11 +180,13 @@ async function connectToServer() {
     if (serverTypes?.length) blockTypes = serverTypes;
     els.connectionStatus.textContent = `● ${health.version || "enterprise"}`;
     addChatMessage("bot", "You're connected! Pick a workflow on the left to get started.");
+    renderSetupDrawer();
   } catch (err) {
     connected = false;
     els.connectionStatus.textContent = "● offline";
     if (String(err.message).includes("Unauthorized") && !apiKey) promptApiKey();
-    addChatMessage("bot", "Engine offline — run npm start for full features. You can still browse templates and build flows.");
+    addChatMessage("bot", "Engine offline — open Setup guide or run npm start. You can still browse templates and build flows.");
+    renderSetupDrawer();
   }
 }
 
@@ -192,24 +203,79 @@ function showPagesDeployBanner() {
     <p class="pages-banner-steps">New here? <strong>1)</strong> Clone the repo · <strong>2)</strong> Run <code>npm install</code> then <code>npm start</code> · <strong>3)</strong> Open <code>localhost:3099</code> — or tap <strong>How to connect</strong> for all options.</p>`;
   document.querySelector(".workspace")?.prepend(banner);
   banner.querySelector("#dismissPagesBanner")?.addEventListener("click", () => banner.remove());
-  banner.querySelector("#howToConnect")?.addEventListener("click", () => showHowToConnectModal());
+  banner.querySelector("#howToConnect")?.addEventListener("click", () => showSetupGuideModal());
   banner.querySelector("#setApiUrl").addEventListener("click", () => showConnectEngineModal());
 }
 
-function showHowToConnectModal() {
-  els.modal.querySelector(".modal-card")?.classList.add("modal-wide");
-  showModal("How to connect RoseOps", `
-    <p class="onboarding-subtitle">RoseOps has two parts: the <strong>studio</strong> (this UI) and the <strong>engine</strong> (<code>server.js</code>) that runs workflows and stores API keys safely.</p>
+const REPO_CLONE_URL = "https://github.com/DaCameraGirl/RoseOps-Studio.git";
+
+function getSetupGuideBodyHtml() {
+  const pagesNote = IS_GITHUB_PAGES
+    ? `<p class="onboarding-subtitle">You're on <strong>GitHub Pages</strong> — great for browsing and building. Running workflows needs the engine (below).</p>`
+    : "";
+  return `
+    ${pagesNote}
+    <h3 class="howto-section-title" id="setup-engine">1 · Connect the engine</h3>
+    <p class="onboarding-subtitle">RoseOps has two parts: the <strong>studio</strong> (this UI) and the <strong>engine</strong> (<code>server.js</code>) that runs workflows and stores API keys encrypted.</p>
     <div class="howto-steps">
-      <div class="howto-step"><span class="howto-step-num">A</span><span><strong>Run on your computer (recommended)</strong><span><code>git clone</code> → <code>npm install</code> → <code>npm start</code> → open <code>http://localhost:3099</code>. Everything works — no extra URL.</span></span></div>
-      <div class="howto-step"><span class="howto-step-num">B</span><span><strong>Desktop shortcut</strong><span>After cloning, double-click <code>start-roseops.cmd</code> (or create a desktop icon). Same as option A — opens localhost automatically.</span></span></div>
-      <div class="howto-step"><span class="howto-step-num">C</span><span><strong>GitHub Pages + engine</strong><span>You're on Pages now (preview). Deploy <code>server.js</code> to Render/Railway, copy that URL, then <strong>Connect engine</strong> — or run locally and click <strong>I started RoseOps from my desktop icon</strong>.</span></span></div>
+      <div class="howto-step"><span class="howto-step-num">A</span><span><strong>Run on your computer (recommended)</strong><span><code>git clone ${REPO_CLONE_URL}</code> → <code>cd RoseOps-Studio</code> → <code>npm install</code> → copy <code>.env.example</code> to <code>.env</code> → <code>npm start</code> → open <code>http://localhost:3099</code>.</span></span></div>
+      <div class="howto-step"><span class="howto-step-num">B</span><span><strong>Desktop shortcut</strong><span>After cloning, double-click <code>start-roseops.cmd</code>. Same as A — opens localhost automatically.</span></span></div>
+      <div class="howto-step"><span class="howto-step-num">C</span><span><strong>GitHub Pages + engine</strong><span>Stay on this page for preview. Deploy <code>server.js</code> to Render/Railway, copy that URL, then <strong>Connect engine</strong> — or run locally and click <strong>I started RoseOps from my desktop icon</strong>.</span></span></div>
     </div>
-    <p class="onboarding-subtitle">API keys (OpenAI, Gemini, DeepSeek, Grok) go in <strong>API keys</strong> on the left once connected.</p>
+    <table class="howto-table">
+      <thead><tr><th>Who</th><th>What to do</th></tr></thead>
+      <tbody>
+        <tr><td>New users</td><td>Clone → <code>npm install</code> → <code>npm start</code> → <code>localhost:3099</code></td></tr>
+        <tr><td>Desktop shortcut</td><td>Run <code>start-roseops.cmd</code></td></tr>
+        <tr><td>Pages visitors</td><td><strong>Setup guide</strong> (sidebar) or status badge <strong>● pages</strong></td></tr>
+        <tr><td>Self-hosters</td><td>Deploy <code>server.js</code> → <strong>Connect engine</strong> → paste your URL</td></tr>
+      </tbody>
+    </table>
+    <h3 class="howto-section-title" id="setup-keys">2 · Connect Grok &amp; other AI keys</h3>
+    <p class="onboarding-subtitle">Like n8n — add keys once in <strong>API keys</strong> (left sidebar), then pick them in any <strong>AI Chat</strong> step.</p>
+    <div class="howto-steps">
+      <div class="howto-step"><span class="howto-step-num">1</span><span><strong>Connect the engine</strong><span>Keys are encrypted in the vault when the engine is running. Preview mode saves keys in this browser only.</span></span></div>
+      <div class="howto-step"><span class="howto-step-num">2</span><span><strong>Get your Grok key</strong><span>Sign in at <a href="https://console.x.ai" target="_blank" rel="noopener">console.x.ai</a> and create an API key.</span></span></div>
+      <div class="howto-step"><span class="howto-step-num">3</span><span><strong>Add in RoseOps</strong><span>Left sidebar → <strong>API keys</strong> → tap <strong>Grok</strong> (or OpenAI / Gemini / DeepSeek) → paste key → save.</span></span></div>
+      <div class="howto-step"><span class="howto-step-num">4</span><span><strong>Use in a workflow</strong><span>Drag <strong>AI Chat</strong> onto the canvas → set Provider to <strong>xai</strong> → pick your Grok key → set model (e.g. <code>grok-2</code>) → run.</span></span></div>
+    </div>
+    <p class="onboarding-subtitle">Assistant shortcuts: <code>connect</code> · <code>grok</code> · <code>keys</code> · <code>help</code></p>`;
+}
+
+function renderSetupDrawer() {
+  if (!els.setupDrawerBody) return;
+  const status = connected
+    ? `<p class="setup-status setup-status-ok"><strong>Engine connected</strong> — workflows and encrypted keys are ready.</p>`
+    : IS_GITHUB_PAGES
+      ? `<p class="setup-status setup-status-warn"><strong>Preview mode</strong> — build flows here; <strong>Run workflow</strong> needs the engine.</p>`
+      : `<p class="setup-status setup-status-warn"><strong>Engine offline</strong> — run <code>npm start</code> in the project folder.</p>`;
+  const keyCount = getCredentialList().length;
+  els.setupDrawerBody.innerHTML = `
+    ${status}
+    <ol class="setup-mini-steps">
+      <li><strong>Engine:</strong> clone repo → <code>npm start</code> → <code>localhost:3099</code></li>
+      <li><strong>Grok:</strong> <a href="https://console.x.ai" target="_blank" rel="noopener">console.x.ai</a> → API keys → tap <strong>Grok</strong> in sidebar</li>
+      <li><strong>Workflow:</strong> AI Chat step → provider <strong>xai</strong> → your key</li>
+    </ol>
+    <p class="setup-keys-note">${keyCount ? `${keyCount} API key${keyCount === 1 ? "" : "s"} saved` : "No API keys yet"}</p>
+    <div class="setup-drawer-actions">
+      <button type="button" class="ghost-button" id="drawerFullGuide">Full guide</button>
+      ${connected ? "" : `<button type="button" class="ghost-button" id="drawerConnectEngine">Connect engine</button>`}
+      <button type="button" class="primary-button" id="drawerAddGrok">Add Grok key</button>
+    </div>`;
+  els.setupDrawerBody.querySelector("#drawerFullGuide")?.addEventListener("click", () => showSetupGuideModal());
+  els.setupDrawerBody.querySelector("#drawerConnectEngine")?.addEventListener("click", () => showConnectEngineModal());
+  els.setupDrawerBody.querySelector("#drawerAddGrok")?.addEventListener("click", () => showQuickCredentialModal("xai_grok"));
+}
+
+function showSetupGuideModal(scrollTo = "") {
+  els.modal.querySelector(".modal-card")?.classList.add("modal-wide");
+  showModal("Setup guide", `${getSetupGuideBodyHtml()}
     <div class="modal-actions">
       <button type="button" class="ghost-button" data-close-modal>Got it</button>
+      <button type="button" class="ghost-button" id="howtoAddGrok">Add Grok key</button>
       <button type="button" class="ghost-button" id="howtoOpenLocal">Open localhost:3099</button>
-      <button type="button" class="primary-button" id="howtoConnectEngine">Connect engine now</button>
+      <button type="button" class="primary-button" id="howtoConnectEngine">Connect engine</button>
     </div>`);
   document.getElementById("howtoOpenLocal")?.addEventListener("click", () => {
     window.open("http://localhost:3099", "_blank");
@@ -219,6 +285,20 @@ function showHowToConnectModal() {
     closeModal();
     showConnectEngineModal();
   });
+  document.getElementById("howtoAddGrok")?.addEventListener("click", () => {
+    closeModal();
+    showQuickCredentialModal("xai_grok");
+  });
+  if (scrollTo) {
+    requestAnimationFrame(() => {
+      const el = document.getElementById(scrollTo === "keys" ? "setup-keys" : "setup-engine");
+      el?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+  }
+}
+
+function showHowToConnectModal() {
+  showSetupGuideModal("engine");
 }
 
 function showConnectEngineModal() {
@@ -432,6 +512,8 @@ async function loadCredentials() {
   if (!els.credentialList) return;
   if (!connected) {
     renderCredentialCards(localCredentialList);
+    renderSetupDrawer();
+    updateGuidePanel();
     return;
   }
   try {
@@ -440,6 +522,8 @@ async function loadCredentials() {
   } catch {
     renderCredentialCards(localCredentialList);
   }
+  renderSetupDrawer();
+  updateGuidePanel();
 }
 
 async function createWorkflow(name, description) {
@@ -1151,9 +1235,15 @@ function handleChatCommand(raw) {
     if (match) { addBlock(match.type); addChatMessage("bot", `Added ${match.name}.`); }
     else { addChatMessage("bot", `Unknown. Try: add http / add code / add delay / add webhook / add schedule / add email`); }
   } else if (lower === "help" || lower === "?") {
-    addChatMessage("bot", "Commands: run · reset · arrange · add [type] · connect · help | Tap ● status (top left) for how to connect the engine.");
+    addChatMessage("bot", "Commands: run · reset · arrange · add [type] · connect · grok · keys · help | Setup guide is in the sidebar and top bar.");
   } else if (lower === "connect" || lower === "engine" || lower === "setup") {
-    showHowToConnectModal();
+    showSetupGuideModal("engine");
+  } else if (lower === "grok" || lower === "xai") {
+    showSetupGuideModal("keys");
+    showQuickCredentialModal("xai_grok");
+  } else if (lower === "keys" || lower === "api") {
+    showSetupGuideModal("keys");
+    document.querySelector(".panel-keys")?.scrollIntoView({ behavior: "smooth", block: "start" });
   } else {
     addChatMessage("bot", `Unknown. Type "help".`);
   }
@@ -1451,8 +1541,9 @@ function renderOnboardingStep() {
       <div class="onboarding-hero">
         <div class="onboarding-hero-mark">✿</div>
         <h2 class="onboarding-title" id="onboardingTitle">Welcome to RoseOps</h2>
-        <p class="onboarding-subtitle">Build automations visually — drag, connect, and run. No coding required to get started.</p>
+        <p class="onboarding-subtitle">Build automations visually — drag, connect, and run. Everything you need is in the <strong>Setup guide</strong> on the left (engine + Grok keys).</p>
       </div>
+      ${IS_GITHUB_PAGES && !connected ? `<p class="onboarding-subtitle">You're on GitHub Pages (preview). Open <strong>Setup guide</strong> in the sidebar to connect the engine.</p>` : ""}
       <div class="onboarding-steps">
         <div class="onboarding-step"><span class="onboarding-step-num">1</span><span><strong>Pick a workflow</strong><span>Start from a template or blank canvas.</span></span></div>
         <div class="onboarding-step"><span class="onboarding-step-num">2</span><span><strong>Add &amp; connect steps</strong><span>Drag steps onto the canvas and link them together.</span></span></div>
@@ -1578,21 +1669,28 @@ function updateGuidePanel() {
     return;
   }
   els.guidePanel.classList.remove("hidden");
+  const engineStep = els.guideSteps?.querySelector('[data-step="engine"]');
+  if (engineStep) engineStep.classList.toggle("hidden", connected);
   const progress = {
+    engine: connected,
     workflow: !!currentWorkflowId,
+    keys: getCredentialList().length > 0,
     nodes: nodes.length > 0,
     connect: connections.length > 0,
     run: els.runState?.textContent === "Complete",
   };
   let activeSet = false;
-  els.guideSteps?.querySelectorAll(".guide-step").forEach((li, i) => {
+  let stepNum = 0;
+  els.guideSteps?.querySelectorAll(".guide-step").forEach((li) => {
+    if (li.classList.contains("hidden")) return;
+    stepNum++;
     const done = !!progress[li.dataset.step];
     li.classList.toggle("done", done);
     const isActive = !done && !activeSet;
     li.classList.toggle("active", isActive);
     if (isActive) activeSet = true;
     const check = li.querySelector(".guide-check");
-    if (check) check.textContent = done ? "✓" : String(i + 1);
+    if (check) check.textContent = done ? "✓" : String(stepNum);
   });
 }
 
