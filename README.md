@@ -72,17 +72,19 @@ In the app: type **`connect`** in Assistant chat, or click the connection status
 
 ### Free AI options (all providers)
 
-The app **Setup guide → section 2** covers every option — free until limits hit:
+**Setup guide → section 2** has a **dropdown + tabs** per provider (Local, Gemini, DeepSeek, Claude, Grok, Copilot, OpenAI) with PowerShell install/test commands.
 
-| Provider | Cost | Get key |
-|----------|------|---------|
-| **Local (Ollama)** | Always free | PowerShell: `winget install Ollama.Ollama` → `ollama pull llama3.2` |
-| **Gemini** | Free tier | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
-| **DeepSeek** | Freemium | [platform.deepseek.com](https://platform.deepseek.com) |
-| **Grok** | Free credits | [console.x.ai](https://console.x.ai) |
-| **OpenAI** | Trial → paid | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| Provider | Cost |
+|----------|------|
+| **Local (Ollama)** | Always free |
+| **Gemini** | Free tier |
+| **DeepSeek** | Freemium |
+| **Anthropic Claude** | Trial → paid |
+| **xAI Grok** | Free credits |
+| **Microsoft Copilot (Azure)** | Azure credits |
+| **OpenAI** | Trial → paid |
 
-In RoseOps: **API keys** → tap the provider → **AI Chat** step → matching provider + model → **Run workflow**.
+In RoseOps: **API keys** dropdown → **Add key** → **AI Chat** step → matching provider + model.
 
 ---
 

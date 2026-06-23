@@ -31,11 +31,13 @@ async function apiFetch(path, opts = {}) {
 const LOCAL_CREDS_KEY = "roseops_local_credentials";
 const AI_STEP_TYPES = new Set(["llm"]);
 const CREDENTIAL_PRESETS = {
-  openai_api: { label: "OpenAI", name: "My OpenAI Key", hint: "New accounts often get free trial credits — then paid. Key at platform.openai.com/api-keys" },
+  openai_api: { label: "OpenAI", name: "My OpenAI Key", hint: "Trial credits — then paid. Key at platform.openai.com/api-keys" },
   google_gemini: { label: "Google Gemini", name: "My Gemini Key", hint: "Free tier with rate limits. Key at aistudio.google.com/apikey" },
-  deepseek_api: { label: "DeepSeek", name: "My DeepSeek Key", hint: "Low-cost / promotional free usage. Key at platform.deepseek.com" },
-  xai_grok: { label: "xAI Grok", name: "My Grok Key", hint: "Free credits until they run out — then paid. Key at console.x.ai" },
-  ollama_local: { label: "Ollama (local)", name: "My PC — Ollama", hint: "Always free on your computer — see Setup guide section 3" },
+  deepseek_api: { label: "DeepSeek", name: "My DeepSeek Key", hint: "Freemium usage. Key at platform.deepseek.com" },
+  xai_grok: { label: "xAI Grok", name: "My Grok Key", hint: "Free credits until they run out. Key at console.x.ai" },
+  anthropic_api: { label: "Anthropic Claude", name: "My Claude Key", hint: "Trial/free tier — then paid. Key at console.anthropic.com" },
+  azure_openai: { label: "Microsoft Copilot (Azure)", name: "My Azure OpenAI", hint: "Azure free credits for new accounts. Endpoint + key from portal.azure.com" },
+  ollama_local: { label: "Ollama (local)", name: "My PC — Ollama", hint: "Always free on your computer — PowerShell steps in Setup guide" },
 };
 
 const AI_PROVIDER_GUIDES = [
@@ -44,8 +46,8 @@ const AI_PROVIDER_GUIDES = [
     label: "Local (Ollama)",
     cost: "Always free",
     costDetail: "Runs on your PC — no API bill, ever",
-    signupUrl: null,
-    signupText: "PowerShell — see section 4",
+    signupUrl: "https://ollama.com",
+    signupText: "ollama.com",
     preset: "ollama_local",
     provider: "ollama",
     model: "llama3.2",
@@ -53,23 +55,27 @@ const AI_PROVIDER_GUIDES = [
     getKey: ["winget install Ollama.Ollama", "ollama pull llama3.2", "ollama list"],
     inRoseOps: "API keys → Local → Save (default URL)",
     inWorkflow: "AI Chat → provider ollama → model llama3.2",
-    section: "local",
+    psSnippet: "__LOCAL_PS__",
   },
   {
     id: "gemini",
     label: "Google Gemini",
     cost: "Free tier",
-    costDetail: "Free until rate limits — no card needed for AI Studio key",
+    costDetail: "Free until rate limits — no card for AI Studio key",
     signupUrl: "https://aistudio.google.com/apikey",
     signupText: "aistudio.google.com/apikey",
     preset: "google_gemini",
     provider: "google",
     model: "gemini-1.5-flash",
     roseopsBtn: "Gemini",
-    getKey: ["Sign in with Google", "Click Create API key", "Copy the key"],
+    getKey: ["Sign in with Google", "Create API key", "Copy the key"],
     inRoseOps: "API keys → Gemini → paste → Save",
     inWorkflow: "AI Chat → provider google → model gemini-1.5-flash",
-    section: "keys",
+    psSnippet: `# Test Gemini in PowerShell (replace YOUR_KEY):
+$key = "YOUR_KEY"
+$uri = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$key"
+$body = '{"contents":[{"parts":[{"text":"Hello"}]}]}'
+Invoke-RestMethod -Uri $uri -Method Post -ContentType "application/json" -Body $body`,
   },
   {
     id: "deepseek",
@@ -82,10 +88,36 @@ const AI_PROVIDER_GUIDES = [
     provider: "deepseek",
     model: "deepseek-chat",
     roseopsBtn: "DeepSeek",
-    getKey: ["Create account", "API keys → create key", "Copy the key"],
+    getKey: ["Create account", "API keys → create", "Copy the key"],
     inRoseOps: "API keys → DeepSeek → paste → Save",
     inWorkflow: "AI Chat → provider deepseek → model deepseek-chat",
-    section: "keys",
+    psSnippet: `# Test DeepSeek in PowerShell (replace YOUR_KEY):
+$headers = @{ Authorization = "Bearer YOUR_KEY"; "Content-Type" = "application/json" }
+$body = '{"model":"deepseek-chat","messages":[{"role":"user","content":"Hello"}]}'
+Invoke-RestMethod -Uri "https://api.deepseek.com/chat/completions" -Method Post -Headers $headers -Body $body`,
+  },
+  {
+    id: "anthropic",
+    label: "Anthropic (Claude)",
+    cost: "Trial → paid",
+    costDetail: "Free trial / promo credits — then pay-as-you-go",
+    signupUrl: "https://console.anthropic.com",
+    signupText: "console.anthropic.com",
+    preset: "anthropic_api",
+    provider: "anthropic",
+    model: "claude-3-5-haiku-latest",
+    roseopsBtn: "Claude",
+    getKey: ["Sign up at console.anthropic.com", "API keys → Create", "Copy the key"],
+    inRoseOps: "API keys → Claude → paste → Save",
+    inWorkflow: "AI Chat → provider anthropic → model claude-3-5-haiku-latest",
+    psSnippet: `# Test Claude in PowerShell (replace YOUR_KEY):
+$headers = @{
+  "x-api-key" = "YOUR_KEY"
+  "anthropic-version" = "2023-06-01"
+  "Content-Type" = "application/json"
+}
+$body = '{"model":"claude-3-5-haiku-latest","max_tokens":100,"messages":[{"role":"user","content":"Hello"}]}'
+Invoke-RestMethod -Uri "https://api.anthropic.com/v1/messages" -Method Post -Headers $headers -Body $body`,
   },
   {
     id: "grok",
@@ -101,30 +133,59 @@ const AI_PROVIDER_GUIDES = [
     getKey: ["Sign in at console.x.ai", "API keys → create", "Copy the key"],
     inRoseOps: "API keys → Grok → paste → Save",
     inWorkflow: "AI Chat → provider xai → model grok-2-latest",
-    section: "keys",
+    psSnippet: `# Test Grok in PowerShell (replace YOUR_KEY):
+$headers = @{ Authorization = "Bearer YOUR_KEY"; "Content-Type" = "application/json" }
+$body = '{"model":"grok-2-latest","messages":[{"role":"user","content":"Hello"}]}'
+Invoke-RestMethod -Uri "https://api.x.ai/v1/chat/completions" -Method Post -Headers $headers -Body $body`,
+  },
+  {
+    id: "copilot",
+    label: "Microsoft Copilot (Azure)",
+    cost: "Azure credits",
+    costDetail: "New Azure accounts get free credits — deploy Azure OpenAI resource",
+    signupUrl: "https://portal.azure.com",
+    signupText: "portal.azure.com",
+    preset: "azure_openai",
+    provider: "azure",
+    model: "gpt-4o-mini",
+    roseopsBtn: "Copilot",
+    getKey: ["Create Azure OpenAI resource", "Deploy a model (e.g. gpt-4o-mini)", "Copy endpoint + key + deployment name"],
+    inRoseOps: "API keys → Copilot → endpoint, deployment, key → Save",
+    inWorkflow: "AI Chat → provider azure → model = deployment name",
+    psSnippet: `# Test Azure OpenAI / Copilot API in PowerShell:
+$endpoint = "https://YOUR-RESOURCE.openai.azure.com"
+$deployment = "gpt-4o-mini"
+$key = "YOUR_AZURE_KEY"
+$uri = "$endpoint/openai/deployments/$deployment/chat/completions?api-version=2024-08-01-preview"
+$headers = @{ "api-key" = $key; "Content-Type" = "application/json" }
+$body = '{"messages":[{"role":"user","content":"Hello"}]}'
+Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body`,
   },
   {
     id: "openai",
     label: "OpenAI",
     cost: "Trial → paid",
-    costDetail: "New accounts may get free trial credits — then pay-as-you-go",
+    costDetail: "New accounts may get trial credits — then pay-as-you-go",
     signupUrl: "https://platform.openai.com/api-keys",
     signupText: "platform.openai.com/api-keys",
     preset: "openai_api",
     provider: "openai",
     model: "gpt-4o-mini",
     roseopsBtn: "OpenAI",
-    getKey: ["Sign up / sign in", "API keys → Create new secret key", "Copy immediately (shown once)"],
+    getKey: ["Sign up / sign in", "API keys → Create secret key", "Copy immediately"],
     inRoseOps: "API keys → OpenAI → paste → Save",
     inWorkflow: "AI Chat → provider openai → model gpt-4o-mini",
-    section: "keys",
+    psSnippet: `# Test OpenAI in PowerShell (replace YOUR_KEY):
+$headers = @{ Authorization = "Bearer YOUR_KEY"; "Content-Type" = "application/json" }
+$body = '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Hello"}]}'
+Invoke-RestMethod -Uri "https://api.openai.com/v1/chat/completions" -Method Post -Headers $headers -Body $body`,
   },
 ];
 
 let localCredentialList = [];
 let blockTypes = [
   { type: "trigger", name: "Trigger", icon: "\u2726", color: "#e8739a", config: [{ key: "triggerType", label: "Type", type: "select", options: ["Manual", "Webhook", "Schedule"], default: "Manual" }], defaults: { channel: "Manual", priority: "Normal", mode: "Auto" } },
-  { type: "llm", name: "AI Chat", icon: "AI", color: "#7c5cff", config: [{ key: "provider", label: "Provider", type: "select", options: ["openai", "google", "deepseek", "xai", "ollama"], default: "openai" }, { key: "credentialId", label: "API Key", type: "credential", credentialTypes: ["openai_api", "google_gemini", "deepseek_api", "xai_grok", "ollama_local", "bearer_token"], default: "" }, { key: "model", label: "Model", type: "string", default: "gpt-4o-mini" }, { key: "systemPrompt", label: "System prompt", type: "code", default: "You are a helpful assistant." }, { key: "userPrompt", label: "User prompt", type: "code", default: "{{message}}" }, { key: "temperature", label: "Temperature", type: "number", default: 0.7 }], defaults: { channel: "LLM", priority: "Normal", mode: "Auto" } },
+  { type: "llm", name: "AI Chat", icon: "AI", color: "#7c5cff", config: [{ key: "provider", label: "Provider", type: "select", options: ["openai", "google", "deepseek", "xai", "anthropic", "azure", "ollama"], default: "openai" }, { key: "credentialId", label: "API Key", type: "credential", credentialTypes: ["openai_api", "google_gemini", "deepseek_api", "xai_grok", "anthropic_api", "azure_openai", "ollama_local", "bearer_token"], default: "" }, { key: "model", label: "Model", type: "string", default: "gpt-4o-mini" }, { key: "systemPrompt", label: "System prompt", type: "code", default: "You are a helpful assistant." }, { key: "userPrompt", label: "User prompt", type: "code", default: "{{message}}" }, { key: "temperature", label: "Temperature", type: "number", default: 0.7 }], defaults: { channel: "LLM", priority: "Normal", mode: "Auto" } },
   { type: "http", name: "HTTP Request", icon: "HTTP", color: "#b8a9d4", config: [{ key: "url", label: "URL", type: "string", default: "https://api.example.com" }, { key: "method", label: "Method", type: "select", options: ["GET", "POST", "PUT", "PATCH", "DELETE"], default: "GET" }, { key: "headers", label: "Headers", type: "code", default: "{}" }, { key: "body", label: "Body", type: "code", default: "{}" }], defaults: { channel: "API", priority: "Normal", mode: "Auto" } },
   { type: "code", name: "Code", icon: "</>", color: "#a8d8c8", config: [{ key: "code", label: "JavaScript", type: "code", default: "return { result: data };" }], defaults: { channel: "JS", priority: "Normal", mode: "Auto" } },
   { type: "delay", name: "Delay", icon: "WAIT", color: "#e8c87a", config: [{ key: "duration", label: "ms", type: "number", default: 1000 }], defaults: { channel: "Timer", priority: "Low", mode: "Auto" } },
@@ -208,8 +269,16 @@ async function init() {
     if (btn.dataset.guideAction === "keys" || btn.dataset.guideAction === "grok") showSetupGuideModal("keys");
     if (btn.dataset.guideAction === "local") showSetupGuideModal("local");
   });
-  els.keyQuickGrid?.querySelectorAll("[data-provider]").forEach((btn) => {
-    btn.addEventListener("click", () => showQuickCredentialModal(btn.dataset.provider));
+  renderKeyProviderPick();
+  document.getElementById("keyProviderAdd")?.addEventListener("click", () => {
+    const preset = document.getElementById("keyProviderPick")?.value;
+    if (!preset) {
+      showSetupGuideModal("keys");
+      return;
+    }
+    const guide = AI_PROVIDER_GUIDES.find((p) => p.preset === preset);
+    showSetupGuideModal(guide?.id || "keys");
+    showQuickCredentialModal(preset);
   });
   document.getElementById("keysSetupHelp")?.addEventListener("click", () => showSetupGuideModal("keys"));
   document.querySelectorAll("[data-close-modal]").forEach((el) => el.addEventListener("click", closeModal));
@@ -328,24 +397,95 @@ function buildAiProvidersTableHtml() {
   </table>`;
 }
 
-function buildCloudAiCardsHtml() {
-  return AI_PROVIDER_GUIDES.filter((p) => p.section === "keys").map((p) => `
-    <div class="ai-provider-card" id="ai-setup-${p.id}">
+function getProviderPsSnippet(p) {
+  if (p.psSnippet === "__LOCAL_PS__") return LOCAL_LLM_POWERSHELL;
+  return p.psSnippet || "";
+}
+
+function buildAiProviderPanelHtml(p, active) {
+  const ps = getProviderPsSnippet(p);
+  const localExtra = p.id === "local" ? `
+    <p class="howto-code-label">RoseOps engine (PowerShell — first)</p>
+    <pre class="howto-code">${ROSEOPS_POWERSHELL}</pre>
+    <div class="howto-checklist">
+      <p class="howto-checklist-title">Local checklist</p>
+      <ol class="howto-checklist-steps">
+        <li>Start RoseOps — <code>npm start</code> → <code>localhost:3099</code></li>
+        <li>Install Ollama — <code>winget install Ollama.Ollama</code></li>
+        <li>Pull model — <code>ollama pull llama3.2</code></li>
+        <li>Add <strong>Local</strong> key → AI Chat → <strong>ollama</strong> → Run</li>
+      </ol>
+    </div>` : "";
+  return `
+    <div class="ai-tab-panel${active ? " active" : ""}" id="ai-tab-${p.id}" data-ai-panel="${p.id}" role="tabpanel">
       <div class="ai-provider-card-head">
         <strong>${p.label}</strong>
         <span class="ai-free-badge">${p.cost}</span>
       </div>
       <p class="ai-provider-card-note">${p.costDetail}</p>
       <ol class="ai-provider-card-steps">
-        <li>Get key: ${p.signupUrl ? `<a href="${p.signupUrl}" target="_blank" rel="noopener">${p.signupText}</a> — ${p.getKey.join(" → ")}` : p.getKey.join(" → ")}</li>
+        <li>Get set up: ${p.signupUrl ? `<a href="${p.signupUrl}" target="_blank" rel="noopener">${p.signupText}</a> — ` : ""}${p.getKey.join(" → ")}</li>
         <li>${p.inRoseOps}</li>
         <li>${p.inWorkflow} → <strong>Run workflow</strong></li>
       </ol>
-      <button type="button" class="ghost-button ai-provider-add-btn" data-ai-preset="${p.preset}">Add ${p.label} key</button>
-    </div>`).join("");
+      ${localExtra}
+      ${ps ? `<p class="howto-code-label">PowerShell — install or test</p><pre class="howto-code">${ps}</pre>` : ""}
+      <button type="button" class="ghost-button ai-provider-add-btn" data-ai-preset="${p.preset}">Add ${p.roseopsBtn} key</button>
+    </div>`;
 }
 
-function getSetupGuideBodyHtml() {
+function buildAiProviderTabsHtml(activeId = "local") {
+  const tabs = AI_PROVIDER_GUIDES.map((p) =>
+    `<button type="button" class="ai-tab${p.id === activeId ? " active" : ""}" data-ai-tab="${p.id}" role="tab" aria-selected="${p.id === activeId}">${p.roseopsBtn}</button>`
+  ).join("");
+  const options = AI_PROVIDER_GUIDES.map((p) =>
+    `<option value="${p.id}"${p.id === activeId ? " selected" : ""}>${p.label} — ${p.cost}</option>`
+  ).join("");
+  const panels = AI_PROVIDER_GUIDES.map((p) => buildAiProviderPanelHtml(p, p.id === activeId)).join("");
+  return `
+    <div class="ai-provider-tabs" id="aiProviderTabs">
+      <label class="ai-tab-dropdown-label">Choose provider
+        <select class="ai-tab-dropdown" id="aiProviderTabSelect" aria-label="Choose AI provider">${options}</select>
+      </label>
+      <div class="ai-tab-list" role="tablist" aria-label="AI provider tabs">${tabs}</div>
+      <div class="ai-tab-panels">${panels}</div>
+    </div>`;
+}
+
+function activateAiProviderTab(id) {
+  const root = document.getElementById("aiProviderTabs");
+  if (!root) return;
+  root.querySelectorAll(".ai-tab").forEach((tab) => {
+    const on = tab.dataset.aiTab === id;
+    tab.classList.toggle("active", on);
+    tab.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  root.querySelectorAll(".ai-tab-panel").forEach((panel) => {
+    panel.classList.toggle("active", panel.dataset.aiPanel === id);
+  });
+  const select = document.getElementById("aiProviderTabSelect");
+  if (select) select.value = id;
+}
+
+function bindAiProviderTabs() {
+  const root = document.getElementById("aiProviderTabs");
+  if (!root) return;
+  root.querySelectorAll(".ai-tab").forEach((tab) => {
+    tab.addEventListener("click", () => activateAiProviderTab(tab.dataset.aiTab));
+  });
+  document.getElementById("aiProviderTabSelect")?.addEventListener("change", (e) => {
+    activateAiProviderTab(e.target.value);
+  });
+}
+
+function getAiProviderId(scrollTo) {
+  if (AI_PROVIDER_GUIDES.some((p) => p.id === scrollTo)) return scrollTo;
+  if (scrollTo === "keys") return "gemini";
+  if (scrollTo === "local") return "local";
+  return "local";
+}
+
+function getSetupGuideBodyHtml(activeAiTab = "local") {
   const pagesNote = IS_GITHUB_PAGES
     ? `<p class="onboarding-subtitle">You're on <strong>GitHub Pages</strong> — great for browsing and building. Running workflows needs the engine (below).</p>`
     : "";
@@ -367,44 +507,25 @@ function getSetupGuideBodyHtml() {
         <tr><td>Self-hosters</td><td>Deploy <code>server.js</code> → <strong>Connect engine</strong> → paste your URL</td></tr>
       </tbody>
     </table>
-    <h3 class="howto-section-title" id="setup-keys">2 · All AI options — free until it ain't</h3>
-    <p class="onboarding-subtitle">Pick any provider below. <strong>Local</strong> is always free. Cloud ones are <strong>free tier / free credits</strong> until limits hit — then they bill or throttle. Add keys once in <strong>API keys</strong> (sidebar), use in any <strong>AI Chat</strong> step.</p>
-    <p class="onboarding-subtitle"><strong>First:</strong> connect the engine (section 1) so keys are encrypted and workflows can run.</p>
+    <h3 class="howto-section-title" id="setup-keys">2 · All AI providers — pick a tab</h3>
+    <p class="onboarding-subtitle">Use the <strong>dropdown</strong> or <strong>tabs</strong> below — each provider has setup steps + <strong>PowerShell</strong> commands to install or test. Free until limits hit (Local is always free).</p>
+    <p class="onboarding-subtitle"><strong>First:</strong> connect the engine (section 1). Then add keys in <strong>API keys</strong> sidebar dropdown.</p>
     ${buildAiProvidersTableHtml()}
-    <p class="howto-code-label">Cloud keys — setup each provider</p>
-    <div class="ai-provider-grid">${buildCloudAiCardsHtml()}</div>
-    <h3 class="howto-section-title" id="setup-local-llm">3 · Local LLMs — always free (full setup)</h3>
-    <p class="onboarding-subtitle">Run AI on <strong>your PC</strong> with zero API cost. You need <strong>two things running</strong>: the RoseOps engine (<code>localhost:3099</code>) and Ollama (<code>localhost:11434</code>).</p>
-    <div class="howto-checklist">
-      <p class="howto-checklist-title">Complete checklist (do in order)</p>
-      <ol class="howto-checklist-steps">
-        <li><strong>Start RoseOps engine</strong> — PowerShell block A below, or double-click <code>start-roseops.cmd</code>. Status should show <strong>● enterprise</strong> (not ● pages / ● offline).</li>
-        <li><strong>Install Ollama</strong> — PowerShell block B: <code>winget install Ollama.Ollama</code></li>
-        <li><strong>Download a model</strong> — new PowerShell window: <code>ollama pull llama3.2</code> (wait for download to finish)</li>
-        <li><strong>Test Ollama</strong> — <code>ollama list</code> should show <code>llama3.2</code></li>
-        <li><strong>Add Local key in RoseOps</strong> — sidebar <strong>API keys</strong> → tap <strong>Local</strong> → leave URL as <code>http://localhost:11434/v1</code> → <strong>Save key</strong></li>
-        <li><strong>Open a workflow</strong> — tap <strong>+ Add</strong> → pick <strong>AI Assistant</strong> template (or any workflow)</li>
-        <li><strong>Configure AI Chat step</strong> — click the <strong>AI Chat</strong> step on canvas → Provider: <strong>ollama</strong> → API Key: your Local key → Model: <code>llama3.2</code> (must match what you pulled)</li>
-        <li><strong>Run it</strong> — click <strong>Run workflow</strong> → check <strong>Execution</strong> panel on the right for the response</li>
-      </ol>
-    </div>
-    <p class="howto-code-label">A · RoseOps engine (PowerShell — first time)</p>
-    <pre class="howto-code" id="roseopsPs1">${ROSEOPS_POWERSHELL}</pre>
-    <p class="howto-code-label">B · Ollama + model (PowerShell — second window)</p>
-    <pre class="howto-code" id="localLlmPs1">${LOCAL_LLM_POWERSHELL}</pre>
+    ${buildAiProviderTabsHtml(activeAiTab)}
     <div class="howto-troubleshoot">
       <p class="howto-checklist-title">If something fails</p>
       <ul class="howto-troubleshoot-list">
-        <li><strong>Run workflow greyed out / nothing happens</strong> — engine not connected. Run <code>npm start</code> and use <code>localhost:3099</code>, not GitHub Pages alone.</li>
-        <li><strong>LLM error / connection refused</strong> — Ollama not running. Open PowerShell and run <code>ollama list</code>; reinstall with block B if needed.</li>
-        <li><strong>Model not found</strong> — Model name in the step must exactly match <code>ollama list</code> (e.g. <code>llama3.2</code>, not <code>llama3</code>).</li>
-        <li><strong>Slow first reply</strong> — normal; Ollama loads the model into RAM on first run.</li>
+        <li><strong>Can't run workflows</strong> — engine offline. <code>npm start</code> → <code>localhost:3099</code></li>
+        <li><strong>Local / Ollama errors</strong> — run <code>ollama list</code> in PowerShell</li>
+        <li><strong>401 / invalid key</strong> — re-copy key from provider console; no extra spaces</li>
+        <li><strong>Azure / Copilot</strong> — model must match your <strong>deployment name</strong> exactly</li>
       </ul>
     </div>
-    <p class="onboarding-subtitle">Assistant shortcuts: <code>connect</code> · <code>gemini</code> · <code>deepseek</code> · <code>grok</code> · <code>openai</code> · <code>ollama</code> · <code>keys</code> · <code>help</code></p>`;
+    <p class="onboarding-subtitle">Assistant: <code>gemini</code> · <code>deepseek</code> · <code>claude</code> · <code>grok</code> · <code>copilot</code> · <code>openai</code> · <code>ollama</code> · <code>keys</code></p>`;
 }
 
 function bindSetupGuideAiButtons() {
+  bindAiProviderTabs();
   document.querySelectorAll(".ai-provider-add-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const preset = btn.dataset.aiPreset;
@@ -427,7 +548,7 @@ function renderSetupDrawer() {
     ${status}
     <p class="setup-path-label">Free AI — pick one (sidebar buttons):</p>
     <ul class="setup-ai-list">
-      ${AI_PROVIDER_GUIDES.map((p) => `<li><strong>${p.roseopsBtn}</strong> <span class="ai-free-badge ai-free-badge-sm">${p.cost}</span> — ${p.section === "local" ? "PowerShell + Ollama" : p.signupText}</li>`).join("")}
+      ${AI_PROVIDER_GUIDES.map((p) => `<li><strong>${p.roseopsBtn}</strong> <span class="ai-free-badge ai-free-badge-sm">${p.cost}</span></li>`).join("")}
     </ul>
     <p class="setup-keys-note">${keyCount ? `${keyCount} API key${keyCount === 1 ? "" : "s"} saved` : "No API keys yet"}</p>
     <div class="setup-drawer-actions">
@@ -443,8 +564,9 @@ function renderSetupDrawer() {
 }
 
 function showSetupGuideModal(scrollTo = "") {
+  const activeAiTab = getAiProviderId(scrollTo);
   els.modal.querySelector(".modal-card")?.classList.add("modal-wide");
-  showModal("Setup guide", `${getSetupGuideBodyHtml()}
+  showModal("Setup guide", `${getSetupGuideBodyHtml(activeAiTab)}
     <div class="modal-actions">
       <button type="button" class="ghost-button" data-close-modal>Got it</button>
       <button type="button" class="ghost-button" id="howtoOpenLocal">Open localhost:3099</button>
@@ -461,10 +583,19 @@ function showSetupGuideModal(scrollTo = "") {
   });
   if (scrollTo) {
     requestAnimationFrame(() => {
-      const targetId = scrollTo === "keys" ? "setup-keys" : scrollTo === "local" ? "setup-local-llm" : "setup-engine";
+      activateAiProviderTab(activeAiTab);
+      const targetId = scrollTo === "engine" ? "setup-engine" : "setup-keys";
       document.getElementById(targetId)?.scrollIntoView({ block: "start", behavior: "smooth" });
     });
   }
+}
+
+function renderKeyProviderPick() {
+  const sel = document.getElementById("keyProviderPick");
+  if (!sel) return;
+  sel.innerHTML = `<option value="">Choose provider…</option>${AI_PROVIDER_GUIDES.map((p) =>
+    `<option value="${p.preset}">${p.label} — ${p.cost}</option>`
+  ).join("")}`;
 }
 
 function showHowToConnectModal() {
@@ -664,7 +795,7 @@ function renderCredentialCards(list) {
   if (!els.credentialList) return;
   els.credentialList.innerHTML = "";
   if (!list.length) {
-    els.credentialList.innerHTML = `<div class="workflow-empty"><p>No API keys yet — tap any button above (<strong>Local</strong>, <strong>Gemini</strong>, <strong>DeepSeek</strong>, <strong>Grok</strong>, <strong>OpenAI</strong>). <button type="button" class="guide-inline-link" id="credListSetupHelp">How to set up all free options</button></p></div>`;
+    els.credentialList.innerHTML = `<div class="workflow-empty"><p>No API keys yet — pick a provider in the dropdown above. <button type="button" class="guide-inline-link" id="credListSetupHelp">Open setup tabs</button></p></div>`;
     document.getElementById("credListSetupHelp")?.addEventListener("click", () => showSetupGuideModal("keys"));
     return;
   }
@@ -1096,7 +1227,7 @@ function renderInspector() {
     });
     els.nodeConfig.querySelectorAll(".cred-inline-add").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const provider = selected.type === "llm" ? { openai: "openai_api", google: "google_gemini", deepseek: "deepseek_api", xai: "xai_grok", ollama: "ollama_local" }[selected.config?.provider] || "openai_api" : "api_key";
+        const provider = selected.type === "llm" ? { openai: "openai_api", google: "google_gemini", deepseek: "deepseek_api", xai: "xai_grok", anthropic: "anthropic_api", azure: "azure_openai", ollama: "ollama_local" }[selected.config?.provider] || "openai_api" : "api_key";
         showQuickCredentialModal(provider);
       });
     });
@@ -1406,21 +1537,27 @@ function handleChatCommand(raw) {
     if (match) { addBlock(match.type); addChatMessage("bot", `Added ${match.name}.`); }
     else { addChatMessage("bot", `Unknown. Try: add http / add code / add delay / add webhook / add schedule / add email`); }
   } else if (lower === "help" || lower === "?") {
-    addChatMessage("bot", "Commands: run · connect · gemini · deepseek · grok · openai · ollama · keys · help | Setup guide → all free AI options.");
+    addChatMessage("bot", "Commands: run · connect · gemini · deepseek · claude · grok · copilot · openai · ollama · keys · help");
   } else if (lower === "connect" || lower === "engine" || lower === "setup") {
     showSetupGuideModal("engine");
   } else if (lower === "gemini" || lower === "google") {
-    showSetupGuideModal("keys");
+    showSetupGuideModal("gemini");
     showQuickCredentialModal("google_gemini");
   } else if (lower === "deepseek") {
-    showSetupGuideModal("keys");
+    showSetupGuideModal("deepseek");
     showQuickCredentialModal("deepseek_api");
   } else if (lower === "grok" || lower === "xai") {
-    showSetupGuideModal("keys");
+    showSetupGuideModal("grok");
     showQuickCredentialModal("xai_grok");
   } else if (lower === "openai" || lower === "gpt") {
-    showSetupGuideModal("keys");
+    showSetupGuideModal("openai");
     showQuickCredentialModal("openai_api");
+  } else if (lower === "claude" || lower === "anthropic") {
+    showSetupGuideModal("anthropic");
+    showQuickCredentialModal("anthropic_api");
+  } else if (lower === "copilot" || lower === "azure" || lower === "microsoft") {
+    showSetupGuideModal("copilot");
+    showQuickCredentialModal("azure_openai");
   } else if (lower === "keys" || lower === "api" || lower === "ai") {
     showSetupGuideModal("keys");
     document.querySelector(".panel-keys")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1494,6 +1631,11 @@ function credentialFieldsForType(type) {
     google_gemini: apiKeyField,
     deepseek_api: apiKeyField,
     xai_grok: apiKeyField,
+    anthropic_api: apiKeyField,
+    azure_openai: `<label>Azure endpoint<input type="url" id="credAzureEndpoint" placeholder="https://your-resource.openai.azure.com" required /></label>
+      <label>Deployment name<input id="credAzureDeployment" value="gpt-4o-mini" required autocomplete="off" /></label>
+      <label>API key<input type="password" id="credApiKey" required autocomplete="off" /></label>
+      <p class="onboarding-subtitle">From Azure Portal → your OpenAI resource → Keys and Endpoint. Deployment name must match what you deployed.</p>`,
     ollama_local: `<p class="onboarding-subtitle"><strong>Before saving:</strong> RoseOps engine running (<code>npm start</code>) + Ollama installed (<code>ollama pull llama3.2</code>). <button type="button" class="guide-inline-link" id="credOllamaSetupHelp">Full setup steps</button></p>
       <label>Ollama URL<input type="url" id="credOllamaUrl" value="http://localhost:11434/v1" placeholder="http://localhost:11434/v1" /></label>
       <label>API key (optional)<input type="text" id="credApiKey" value="ollama" autocomplete="off" placeholder="ollama" /></label>
@@ -1514,7 +1656,13 @@ function collectCredentialData(type) {
     case "openai_api":
     case "google_gemini":
     case "deepseek_api":
-    case "xai_grok": return { apiKey: document.getElementById("credApiKey").value.trim() };
+    case "xai_grok":
+    case "anthropic_api": return { apiKey: document.getElementById("credApiKey").value.trim() };
+    case "azure_openai": return {
+      endpoint: document.getElementById("credAzureEndpoint").value.trim().replace(/\/$/, ""),
+      deployment: document.getElementById("credAzureDeployment").value.trim(),
+      apiKey: document.getElementById("credApiKey").value.trim(),
+    };
     case "ollama_local": return {
       baseUrl: document.getElementById("credOllamaUrl").value.trim() || "http://localhost:11434/v1",
       apiKey: document.getElementById("credApiKey").value.trim() || "ollama",
@@ -1589,6 +1737,8 @@ function showNewCredentialModal() {
           <option value="google_gemini">Google Gemini</option>
           <option value="deepseek_api">DeepSeek</option>
           <option value="xai_grok">xAI Grok</option>
+          <option value="anthropic_api">Anthropic Claude</option>
+          <option value="azure_openai">Microsoft Copilot (Azure)</option>
           <option value="ollama_local">Ollama (local, free)</option>
         </optgroup>
         <optgroup label="Integrations">
