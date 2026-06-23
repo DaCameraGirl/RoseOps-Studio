@@ -298,6 +298,29 @@ button {
   margin-bottom: 14px;
 }
 
+.panel-hint {
+  margin: -6px 0 12px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.workflow-empty {
+  display: grid;
+  gap: 12px;
+  padding: 16px 12px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  background: var(--panel-soft);
+}
+
+.workflow-empty p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .panel h2 {
   margin: 0;
   font-size: 11px;
@@ -1410,7 +1433,8 @@ textarea:focus {
   min-width: 100px;
 }
 
-.template-card .template-badge {
+.template-card .template-badge,
+.picker-card .template-badge {
   display: inline-block;
   margin-top: 4px;
   border-radius: var(--radius-full);
@@ -1421,6 +1445,71 @@ textarea:focus {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   background: var(--rose-glow);
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.picker-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--ink);
+  text-align: left;
+  background: var(--panel);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.picker-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--rose);
+  background: var(--panel-soft);
+  box-shadow: 0 10px 24px var(--rose-glow);
+}
+
+.picker-card strong {
+  display: block;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-card > span > span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.picker-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 8px;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.picker-divider::before,
+.picker-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
 }
 
 /* ===== Palette drag ===== */
@@ -1519,6 +1608,16 @@ textarea:focus {
   padding: 20px;
   background: var(--panel);
   box-shadow: var(--shadow-lg);
+}
+
+.modal-card.modal-wide {
+  width: min(680px, 100%);
+}
+
+@media (max-width: 520px) {
+  .picker-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .modal-card form {

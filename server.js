@@ -13,6 +13,7 @@ const { createNodeRegistry } = require("./lib/nodes");
 const { createExecutionEngine } = require("./lib/execution");
 const { createTriggerManager } = require("./lib/triggers");
 const { validateWorkflow } = require("./lib/validate");
+const { STARTER_WORKFLOWS, seedWorkflows } = require("./lib/starter-workflows");
 
 ensureProductionKeys();
 
@@ -385,6 +386,16 @@ app.post("/api/webhooks/:workflowId/rotate-secret", (req, res) => {
   res.json({ secret, url: `/webhook/${wh.path}` });
 });
 
+// ===== Starter workflows =====
+app.get("/api/starter-workflows", (req, res) => {
+  res.json(STARTER_WORKFLOWS);
+});
+
+app.post("/api/workflows/seed", (req, res) => {
+  const seeded = seedWorkflows(db, triggers, audit);
+  res.json({ seeded, message: seeded ? `Created ${seeded} starter workflows` : "Workflows already exist" });
+});
+
 // ===== Node types =====
 app.get("/api/node-types", (req, res) => {
   res.json(Object.entries(nodeTypes).map(([type, def]) => ({
@@ -398,8 +409,10 @@ app.get("/api/node-types", (req, res) => {
 });
 
 app.listen(config.port, config.host, () => {
+  const seeded = seedWorkflows(db, triggers, audit);
   triggers.restoreAll();
   console.log(`\n  RoseOps Studio Enterprise v3 — http://${config.host === "0.0.0.0" ? "localhost" : config.host}:${config.port}\n`);
+  if (seeded) console.log(`  Seeded ${seeded} starter workflows — pick one in the sidebar\n`);
   if (config.apiKey) console.log("  API authentication: enabled");
   console.log("  Credentials vault: AES-256-GCM encrypted\n");
 });

@@ -48,64 +48,10 @@ let blockTypes = [
   { type: "googleSheets", name: "Google Sheets", icon: "GS", color: "#34a853", config: [{ key: "scriptUrl", label: "Apps Script URL", type: "string", default: "" }, { key: "sheetName", label: "Sheet Name", type: "string", default: "Sheet1" }, { key: "rowData", label: "Row Data (JSON)", type: "code", default: '["{{timestamp}}", "workflow ran"]' }], defaults: { channel: "Sheets", priority: "Normal", mode: "Auto" } },
 ];
 
-const WORKFLOW_TEMPLATES = [
-  {
-    id: "api-pipeline",
-    name: "API Pipeline",
-    description: "Authenticated HTTP ingest with transformation layer",
-    badge: "Production",
-    color: "#6f7dfb",
-    icon: "API",
-    nodes: [
-      { type: "trigger", title: "Manual Trigger", channel: "Operations", notes: "Controlled execution entry point", x: 90, y: 180, icon: "IN", color: "#ed4f8f", priority: "Normal", mode: "Auto", config: { triggerType: "Manual" } },
-      { type: "http", title: "API Ingest", channel: "Integration", notes: "Configure endpoint and auth credential", x: 480, y: 180, icon: "HTTP", color: "#6f7dfb", priority: "High", mode: "Auto", config: { url: "", method: "GET", credentialId: "", headers: "{}", body: "{}", retries: 3 } },
-      { type: "code", title: "Normalize Payload", channel: "Transform", notes: "Maps upstream schema to internal contract", x: 870, y: 180, icon: "</>", color: "#13a68f", priority: "Normal", mode: "Auto", config: { code: "return { ok: true, payload: data.data, receivedAt: new Date().toISOString() };" } },
-    ],
-    connections: [[0, 1], [1, 2]],
-  },
-  {
-    id: "incident-notify",
-    name: "Incident Notify",
-    description: "Operational alert dispatch to Discord",
-    badge: "Operations",
-    color: "#7289da",
-    icon: "DC",
-    nodes: [
-      { type: "trigger", title: "Manual Trigger", channel: "Operations", notes: "On-demand incident broadcast", x: 90, y: 200, icon: "IN", color: "#ed4f8f", priority: "Critical", mode: "Auto", config: { triggerType: "Manual" } },
-      { type: "discord", title: "Discord Alert", channel: "Notification", notes: "Requires Discord webhook credential", x: 480, y: 200, icon: "DC", color: "#7289da", priority: "Critical", mode: "Auto", config: { credentialId: "", message: "[INCIDENT] {{timestamp}} — workflow alert triggered. Review execution log.", username: "RoseOps" } },
-    ],
-    connections: [[0, 1]],
-  },
-  {
-    id: "repo-compliance",
-    name: "Repo Compliance Watch",
-    description: "Scheduled GitHub audit with Discord escalation",
-    badge: "Compliance",
-    color: "#3d444d",
-    icon: "GH",
-    nodes: [
-      { type: "schedule", title: "Hourly Audit", channel: "Scheduler", notes: "Cron-driven compliance check", x: 90, y: 160, icon: "CLOCK", color: "#ed4f8f", priority: "High", mode: "Auto", config: { cron: "0 * * * *", timezone: "UTC" } },
-      { type: "github", title: "Repository Status", channel: "GitHub", notes: "Link GitHub token credential", x: 480, y: 160, icon: "GH", color: "#3d444d", priority: "High", mode: "Auto", config: { endpoint: "", credentialId: "", method: "GET", body: "{}" } },
-      { type: "discord", title: "Escalation", channel: "Notification", notes: "Discord webhook credential required", x: 870, y: 160, icon: "DC", color: "#7289da", priority: "High", mode: "Auto", config: { credentialId: "", message: "Compliance check: {{data.full_name}} — {{data.stargazers_count}} stars, archived={{data.archived}}", username: "RoseOps" } },
-    ],
-    connections: [[0, 1], [1, 2]],
-  },
-  {
-    id: "audit-log-sheet",
-    name: "Audit Log to Sheets",
-    description: "Append execution records to Google Sheets via service account",
-    badge: "Audit",
-    color: "#34a853",
-    icon: "GS",
-    nodes: [
-      { type: "trigger", title: "Manual Trigger", channel: "Audit", notes: "Controlled log append", x: 90, y: 200, icon: "IN", color: "#ed4f8f", priority: "Normal", mode: "Auto", config: { triggerType: "Manual" } },
-      { type: "googleSheets", title: "Append Audit Row", channel: "Sheets", notes: "Service account + spreadsheet ID required", x: 480, y: 200, icon: "GS", color: "#34a853", priority: "Normal", mode: "Auto", config: { credentialId: "", spreadsheetId: "", range: "AuditLog!A:E", rowData: '["{{timestamp}}", "execution", "manual", "success", ""]' } },
-    ],
-    connections: [[0, 1]],
-  },
-];
+let WORKFLOW_TEMPLATES = [];
 
 const ONBOARDING_KEY = "roseops_onboarded";
+const STARTERS_SEED_KEY = "roseops_starters_seeded";
 const ONBOARDING_STEPS = 3;
 
 let localDb = JSON.parse(localStorage.getItem("roseops_workflows") || "[]");
@@ -150,7 +96,7 @@ async function init() {
   els.chatForm.addEventListener("submit", (e) => {
     e.preventDefault(); const value = els.chatInput.value; els.chatInput.value = ""; handleChatCommand(value);
   });
-  els.newWorkflow.addEventListener("click", () => showNewWorkflowModal());
+  els.newWorkflow.addEventListener("click", () => showWorkflowPickerModal());
   if (els.newCredential) els.newCredential.addEventListener("click", () => showNewCredentialModal());
   document.querySelectorAll("[data-close-modal]").forEach((el) => el.addEventListener("click", closeModal));
   if (els.browseTemplates) {
@@ -161,9 +107,11 @@ async function init() {
   setupPaletteDropZone();
 
   await connectToServer();
+  await loadStarterCatalog();
   renderPalette();
   renderTemplates();
   await loadCredentials();
+  await ensureStarterWorkflowsExist();
   await loadWorkflowList();
   if (connected) setupSSE();
   if (!localStorage.getItem(ONBOARDING_KEY)) showOnboarding();
@@ -284,6 +232,41 @@ function saveLocalDb() {
   localStorage.setItem("roseops_workflows", JSON.stringify(localDb));
 }
 
+async function loadStarterCatalog() {
+  try {
+    if (connected) {
+      WORKFLOW_TEMPLATES = await (await apiFetch("/api/starter-workflows")).json();
+    } else {
+      const base = window.location.pathname.replace(/\/[^/]*$/, "/");
+      WORKFLOW_TEMPLATES = await (await fetch(`${base}starters.json`)).json();
+    }
+  } catch {
+    WORKFLOW_TEMPLATES = [];
+  }
+}
+
+async function ensureStarterWorkflowsExist() {
+  let count = 0;
+  if (connected) {
+    try {
+      const list = await (await apiFetch("/api/workflows")).json();
+      count = list.length;
+      if (!count) {
+        const result = await (await apiFetch("/api/workflows/seed", { method: "POST" })).json();
+        if (result.seeded) addChatMessage("bot", `${result.seeded} starter workflows ready — pick one from the sidebar.`);
+      }
+    } catch {}
+    return;
+  }
+  if (!localDb.length && WORKFLOW_TEMPLATES.length && !localStorage.getItem(STARTERS_SEED_KEY)) {
+    for (const starter of WORKFLOW_TEMPLATES) {
+      await cloneTemplate(starter, { silent: true, skipArrange: true });
+    }
+    localStorage.setItem(STARTERS_SEED_KEY, "1");
+    addChatMessage("bot", `${WORKFLOW_TEMPLATES.length} starter workflows loaded — pick one from the sidebar.`);
+  }
+}
+
 async function loadWorkflowList() {
   els.workflowList.innerHTML = "";
   let workflows = [];
@@ -291,10 +274,23 @@ async function loadWorkflowList() {
     try { workflows = await (await apiFetch("/api/workflows")).json(); } catch {}
   }
   if (!workflows?.length) workflows = localDb;
+
+  if (!workflows.length) {
+    const empty = document.createElement("div");
+    empty.className = "workflow-empty";
+    empty.innerHTML = `<p>No workflows yet.</p><button type="button" class="primary-button" id="pickStarterBtn">Pick a starter workflow</button>`;
+    els.workflowList.appendChild(empty);
+    empty.querySelector("#pickStarterBtn").addEventListener("click", () => showWorkflowPickerModal());
+    return;
+  }
+
   for (const wf of workflows) {
+    const starter = WORKFLOW_TEMPLATES.find((t) => t.name === wf.name);
+    const color = starter?.color || "#ed4f8f";
+    const icon = starter?.icon || (wf.name || "?").slice(0, 2).toUpperCase();
     const btn = document.createElement("button");
     btn.className = `template-card${wf.id === currentWorkflowId ? " active" : ""}`;
-    btn.innerHTML = `<span class="tile-icon" style="background:#ed4f8f">${(wf.name || "?").slice(0,2).toUpperCase()}</span><span><strong>${escapeHtml(wf.name)}</strong><span>${escapeHtml(wf.description||"")}</span></span>`;
+    btn.innerHTML = `<span class="tile-icon" style="background:${color}">${icon}</span><span><strong>${escapeHtml(wf.name)}</strong><span>${escapeHtml(wf.description || "")}</span>${starter?.badge ? `<span class="template-badge">${escapeHtml(starter.badge)}</span>` : ""}</span>`;
     btn.addEventListener("click", () => loadWorkflow(wf.id));
     els.workflowList.appendChild(btn);
   }
@@ -406,8 +402,8 @@ function instantiateTemplateNodes(templateNodes) {
   }));
 }
 
-async function cloneTemplate(template) {
-  const name = template.name;
+async function cloneTemplate(template, opts = {}) {
+  const name = opts.rename || template.name;
   const description = template.description;
   const tplNodes = instantiateTemplateNodes(template.nodes);
   const tplConnections = template.connections.map(([f, t]) => [f, t]);
@@ -440,10 +436,11 @@ async function cloneTemplate(template) {
   webhookInfo = null;
   els.flowTitle.textContent = name;
   clearRun();
-  autoArrange();
+  if (!opts.skipArrange) autoArrange();
   renderFlow();
   await loadWorkflowList();
-  addChatMessage("bot", `Deployed "${name}" — configure credentials and endpoints before execution.`);
+  if (!opts.silent) addChatMessage("bot", `Deployed "${name}" — configure credentials and endpoints before execution.`);
+  return id;
 }
 
 async function createGuidedWorkflow() {
@@ -919,19 +916,42 @@ function showModal(title, bodyHtml) {
 function closeModal() {
   els.modal.classList.add("hidden");
   els.modalBody.innerHTML = "";
+  els.modal.querySelector(".modal-card")?.classList.remove("modal-wide");
 }
 
-function showNewWorkflowModal() {
-  showModal("New Workflow", `
-    <form id="newWorkflowForm" class="credential-form-grid">
-      <label>Name<input id="wfName" required autocomplete="off" placeholder="Production API Pipeline" /></label>
-      <label>Description<textarea id="wfDesc" rows="2" placeholder="Purpose and ownership"></textarea></label>
+function showWorkflowPickerModal() {
+  els.modal.querySelector(".modal-card")?.classList.add("modal-wide");
+  const starterCards = WORKFLOW_TEMPLATES.length
+    ? WORKFLOW_TEMPLATES.map((tpl) => `
+    <button type="button" class="picker-card" data-starter-id="${tpl.id}">
+      <span class="tile-icon" style="background:${tpl.color}">${tpl.icon}</span>
+      <span><strong>${escapeHtml(tpl.name)}</strong><span>${escapeHtml(tpl.description)}</span>${tpl.badge ? `<span class="template-badge">${escapeHtml(tpl.badge)}</span>` : ""}</span>
+    </button>`).join("")
+    : `<p class="onboarding-subtitle">Starters didn't load — refresh the page or check your API connection.</p>`;
+
+  showModal("Pick a Workflow", `
+    <p class="onboarding-subtitle">Choose a starter to add to your library, or start blank.</p>
+    <div class="picker-grid">${starterCards}</div>
+    <div class="picker-divider"><span>or</span></div>
+    <form id="blankWorkflowForm" class="credential-form-grid">
+      <label>Blank workflow name<input id="wfName" autocomplete="off" placeholder="Untitled" /></label>
+      <label>Description<textarea id="wfDesc" rows="2" placeholder="Optional"></textarea></label>
       <div class="modal-actions">
         <button type="button" class="ghost-button" data-close-modal>Cancel</button>
-        <button type="submit" class="primary-button">Create</button>
+        <button type="submit" class="ghost-button">Empty canvas</button>
       </div>
     </form>`);
-  document.getElementById("newWorkflowForm").addEventListener("submit", async (e) => {
+
+  els.modalBody.querySelectorAll("[data-starter-id]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const tpl = WORKFLOW_TEMPLATES.find((t) => t.id === btn.dataset.starterId);
+      if (!tpl) return;
+      closeModal();
+      await cloneTemplate(tpl);
+    });
+  });
+
+  document.getElementById("blankWorkflowForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = document.getElementById("wfName").value.trim() || "Untitled";
     const desc = document.getElementById("wfDesc").value.trim();
