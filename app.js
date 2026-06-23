@@ -28,8 +28,19 @@ async function apiFetch(path, opts = {}) {
   return res;
 }
 
+const LOCAL_CREDS_KEY = "roseops_local_credentials";
+const AI_STEP_TYPES = new Set(["llm"]);
+const CREDENTIAL_PRESETS = {
+  openai_api: { label: "OpenAI", name: "My OpenAI Key", hint: "Get a key at platform.openai.com/api-keys" },
+  google_gemini: { label: "Google Gemini", name: "My Gemini Key", hint: "Get a key at aistudio.google.com/apikey" },
+  deepseek_api: { label: "DeepSeek", name: "My DeepSeek Key", hint: "Get a key at platform.deepseek.com" },
+  xai_grok: { label: "xAI Grok", name: "My Grok Key", hint: "Get a key at console.x.ai" },
+};
+
+let localCredentialList = [];
 let blockTypes = [
   { type: "trigger", name: "Trigger", icon: "\u2726", color: "#e8739a", config: [{ key: "triggerType", label: "Type", type: "select", options: ["Manual", "Webhook", "Schedule"], default: "Manual" }], defaults: { channel: "Manual", priority: "Normal", mode: "Auto" } },
+  { type: "llm", name: "AI Chat", icon: "AI", color: "#7c5cff", config: [{ key: "provider", label: "Provider", type: "select", options: ["openai", "google", "deepseek", "xai"], default: "openai" }, { key: "credentialId", label: "API Key", type: "credential", credentialTypes: ["openai_api", "google_gemini", "deepseek_api", "xai_grok", "bearer_token"], default: "" }, { key: "model", label: "Model", type: "string", default: "gpt-4o-mini" }, { key: "systemPrompt", label: "System prompt", type: "code", default: "You are a helpful assistant." }, { key: "userPrompt", label: "User prompt", type: "code", default: "{{message}}" }, { key: "temperature", label: "Temperature", type: "number", default: 0.7 }], defaults: { channel: "LLM", priority: "Normal", mode: "Auto" } },
   { type: "http", name: "HTTP Request", icon: "HTTP", color: "#b8a9d4", config: [{ key: "url", label: "URL", type: "string", default: "https://api.example.com" }, { key: "method", label: "Method", type: "select", options: ["GET", "POST", "PUT", "PATCH", "DELETE"], default: "GET" }, { key: "headers", label: "Headers", type: "code", default: "{}" }, { key: "body", label: "Body", type: "code", default: "{}" }], defaults: { channel: "API", priority: "Normal", mode: "Auto" } },
   { type: "code", name: "Code", icon: "</>", color: "#a8d8c8", config: [{ key: "code", label: "JavaScript", type: "code", default: "return { result: data };" }], defaults: { channel: "JS", priority: "Normal", mode: "Auto" } },
   { type: "delay", name: "Delay", icon: "WAIT", color: "#e8c87a", config: [{ key: "duration", label: "ms", type: "number", default: 1000 }], defaults: { channel: "Timer", priority: "Low", mode: "Auto" } },
@@ -75,7 +86,7 @@ let lastConnectedPair = null;
 
 const els = {};
 function initEls() {
-  const ids = ["templateList","blockPalette","flowTitle","nodeCount","board","nodes","connections","inspectorEmpty","inspectorForm","nodeName","nodeChannel","nodeNotes","nodePriority","nodeMode","deleteNode","resetFlow","autoArrange","fitView","runFlow","runLog","runState","chatForm","chatInput","chatLog","workflowList","newWorkflow","nodeConfig","browseTemplates","onboarding","onboardingContent","onboardingProgress","credentialList","newCredential","modal","modalTitle","modalBody","connectionStatus","workflowVersion","nodeCountMeta","canvasEmpty","canvasPickStarter","guidePanel","guideSteps","dismissGuide"];
+  const ids = ["templateList","blockPalette","blockPaletteAi","flowTitle","nodeCount","board","nodes","connections","inspectorEmpty","inspectorForm","nodeName","nodeChannel","nodeNotes","nodePriority","nodeMode","deleteNode","resetFlow","autoArrange","fitView","runFlow","runLog","runState","chatForm","chatInput","chatLog","workflowList","newWorkflow","nodeConfig","browseTemplates","onboarding","onboardingContent","onboardingProgress","credentialList","newCredential","keyQuickGrid","modal","modalTitle","modalBody","connectionStatus","workflowVersion","nodeCountMeta","canvasEmpty","canvasPickStarter","guidePanel","guideSteps","dismissGuide"];
   ids.forEach(id => els[id] = document.querySelector("#" + id));
 }
 
@@ -102,6 +113,9 @@ async function init() {
   });
   els.newWorkflow.addEventListener("click", () => showWorkflowPickerModal());
   if (els.newCredential) els.newCredential.addEventListener("click", () => showNewCredentialModal());
+  els.keyQuickGrid?.querySelectorAll("[data-provider]").forEach((btn) => {
+    btn.addEventListener("click", () => showQuickCredentialModal(btn.dataset.provider));
+  });
   document.querySelectorAll("[data-close-modal]").forEach((el) => el.addEventListener("click", closeModal));
   if (els.browseTemplates) {
     els.browseTemplates.addEventListener("click", () => {
@@ -312,33 +326,42 @@ async function loadWorkflowList() {
     const btn = document.createElement("button");
     btn.className = `template-card${wf.id === currentWorkflowId ? " active" : ""}`;
     btn.innerHTML = `<span class="tile-icon" style="background:${color}">${icon}</span><span><strong>${escapeHtml(wf.name)}</strong><span>${escapeHtml(wf.description || "")}</span>${starter?.badge ? `<span class="template-badge">${escapeHtml(starter.badge)}</span>` : ""}<span class="card-cta">Tap to open →</span></span>`;
-    btn.addEventListener("click", () => loadWorkflow(wf.id));
+    btn.addEventListener("click", async () => { await loadWorkflow(wf.id); });
     els.workflowList.appendChild(btn);
   }
   if (workflows.length > 0 && !currentWorkflowId) await loadWorkflow(workflows[0].id);
 }
 
+function renderCredentialCards(list) {
+  if (!els.credentialList) return;
+  els.credentialList.innerHTML = "";
+  if (!list.length) {
+    els.credentialList.innerHTML = `<div class="workflow-empty"><p>No API keys yet — tap <strong>OpenAI</strong>, <strong>Gemini</strong>, <strong>DeepSeek</strong>, or <strong>Grok</strong> above.</p></div>`;
+    return;
+  }
+  list.forEach((cred) => {
+    const btn = document.createElement("button");
+    btn.className = "template-card";
+    const label = CREDENTIAL_PRESETS[cred.type]?.label || cred.type;
+    btn.innerHTML = `<span class="tile-icon" style="background:#7c5cff">${label.slice(0, 2).toUpperCase()}</span><span><strong>${escapeHtml(cred.name)}</strong><span>${escapeHtml(label)}</span><span class="card-cta">Tap to view →</span></span>`;
+    btn.addEventListener("click", () => showCredentialDetail(cred.id));
+    els.credentialList.appendChild(btn);
+  });
+}
+
 async function loadCredentials() {
+  loadLocalCredentials();
   if (!els.credentialList) return;
   if (!connected) {
-    els.credentialList.innerHTML = `<div class="workflow-empty"><p>Secrets vault needs the engine running — use <strong>npm start</strong> locally.</p></div>`;
+    renderCredentialCards(localCredentialList);
     return;
   }
   try {
     credentialList = await (await apiFetch("/api/credentials")).json();
-    els.credentialList.innerHTML = "";
-    if (!credentialList.length) {
-      els.credentialList.innerHTML = `<div class="workflow-empty"><p>No secrets saved yet. Add one when a step needs an API key or password.</p></div>`;
-      return;
-    }
-    credentialList.forEach((cred) => {
-      const btn = document.createElement("button");
-      btn.className = "template-card";
-      btn.innerHTML = `<span class="tile-icon" style="background:#9b8ec4">${cred.type.slice(0, 2).toUpperCase()}</span><span><strong>${escapeHtml(cred.name)}</strong><span>${escapeHtml(cred.type)}</span><span class="card-cta">Tap to view →</span></span>`;
-      btn.addEventListener("click", () => showCredentialDetail(cred.id));
-      els.credentialList.appendChild(btn);
-    });
-  } catch {}
+    renderCredentialCards(credentialList);
+  } catch {
+    renderCredentialCards(localCredentialList);
+  }
 }
 
 async function createWorkflow(name, description) {
@@ -380,6 +403,9 @@ async function loadWorkflow(id) {
   if (connected) {
     try { const wh = await (await apiFetch(`/api/webhooks/${id}`)).json(); if (wh) webhookInfo = wh; } catch {}
   }
+  showToast(`Opened "${wf.name}" — ${nodes.length} step${nodes.length === 1 ? "" : "s"}`, "success");
+  els.board?.closest(".board-wrap")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  if (nodes[0]) selectNode(nodes[0].id);
 }
 
 function saveWorkflow() {
@@ -401,8 +427,11 @@ function saveWorkflow() {
 }
 
 function renderPalette() {
-  els.blockPalette.innerHTML = "";
+  if (els.blockPaletteAi) els.blockPaletteAi.innerHTML = "";
+  if (els.blockPalette) els.blockPalette.innerHTML = "";
   blockTypes.forEach((block) => {
+    const host = AI_STEP_TYPES.has(block.type) ? (els.blockPaletteAi || els.blockPalette) : els.blockPalette;
+    if (!host) return;
     const button = document.createElement("button");
     button.className = "palette-card";
     button.draggable = false;
@@ -410,8 +439,34 @@ function renderPalette() {
     button.innerHTML = `<span class="tile-icon" style="background:${block.color}">${block.icon}</span><span><strong>${block.name}</strong><span>Drag or click to add</span></span>`;
     button.addEventListener("click", () => { if (!paletteDrag?.moved) addBlock(block.type); });
     button.addEventListener("pointerdown", (e) => startPaletteDrag(e, block));
-    els.blockPalette.appendChild(button);
+    host.appendChild(button);
   });
+}
+
+function loadLocalCredentials() {
+  try { localCredentialList = JSON.parse(localStorage.getItem(LOCAL_CREDS_KEY) || "[]"); } catch { localCredentialList = []; }
+}
+
+function getActiveCredentials() {
+  return connected ? credentialList : localCredentialList;
+}
+
+async function persistCredential(name, type, data) {
+  if (connected) {
+    const res = await apiFetch("/api/credentials", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, type, data }),
+    });
+    return (await res.json()).id;
+  }
+  const id = crypto.randomUUID();
+  localCredentialList.push({ id, name, type, tags: [], created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+  const secrets = JSON.parse(localStorage.getItem(`${LOCAL_CREDS_KEY}_secrets`) || "{}");
+  secrets[id] = data;
+  localStorage.setItem(`${LOCAL_CREDS_KEY}_secrets`, JSON.stringify(secrets));
+  localStorage.setItem(LOCAL_CREDS_KEY, JSON.stringify(localCredentialList.map(({ id, name, type, tags, created_at, updated_at }) => ({ id, name, type, tags, created_at, updated_at }))));
+  return id;
 }
 
 function renderTemplates() {
@@ -632,9 +687,10 @@ function renderInspector() {
         return `<label>${cfg.label}<select class="node-cfg" data-key="${cfg.key}"><option value="true"${isTrue ? " selected" : ""}>Yes</option><option value="false"${!isTrue ? " selected" : ""}>No</option></select></label>`;
       }
       if (cfg.type === "credential") {
-        const filtered = credentialList.filter((c) => !cfg.credentialTypes || cfg.credentialTypes.includes(c.type));
-        const opts = filtered.map((c) => `<option value="${c.id}"${val === c.id ? " selected" : ""}>${escapeHtml(c.name)} (${c.type})</option>`).join("");
-        return `<label>${cfg.label}<select class="node-cfg" data-key="${cfg.key}"><option value="">— Select credential —</option>${opts}</select></label>`;
+        const filtered = getActiveCredentials().filter((c) => !cfg.credentialTypes || cfg.credentialTypes.includes(c.type));
+        const opts = filtered.map((c) => `<option value="${c.id}"${val === c.id ? " selected" : ""}>${escapeHtml(c.name)} (${CREDENTIAL_PRESETS[c.type]?.label || c.type})</option>`).join("");
+        const addKey = `<button type="button" class="ghost-button cred-inline-add" data-cred-key="${cfg.key}">+ Add API key</button>`;
+        return `<label>${cfg.label}<select class="node-cfg" data-key="${cfg.key}"><option value="">— Pick your API key —</option>${opts}</select>${addKey}</label>`;
       }
       if (cfg.type === "code") {
         return `<label>${cfg.label}<textarea class="node-cfg code-cfg" data-key="${cfg.key}" rows="4">${escapeHtml(String(val))}</textarea></label>`;
@@ -648,6 +704,12 @@ function renderInspector() {
       if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
         el.addEventListener("input", () => updateNodeConfig());
       }
+    });
+    els.nodeConfig.querySelectorAll(".cred-inline-add").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const provider = selected.type === "llm" ? { openai: "openai_api", google: "google_gemini", deepseek: "deepseek_api", xai: "xai_grok" }[selected.config?.provider] || "openai_api" : "api_key";
+        showQuickCredentialModal(provider);
+      });
     });
   } else {
     els.nodeConfig.innerHTML = "";
@@ -894,7 +956,8 @@ function autoArrange() {
 async function runFlow() {
   if (!currentWorkflowId) return;
   if (!connected) {
-    addChatMessage("bot", "Start the server with 'npm start' to execute workflows");
+    showToast("Connect the engine to run workflows (npm start locally, or Connect engine on GitHub Pages).", "info");
+    addChatMessage("bot", "Running needs the engine. You can still build flows and save API keys — connect the engine when ready.");
     return;
   }
   clearRun(false);
@@ -1016,7 +1079,12 @@ function showWorkflowPickerModal() {
 }
 
 function credentialFieldsForType(type) {
+  const apiKeyField = `<label>API Key<input type="password" id="credApiKey" required autocomplete="off" placeholder="Paste your API key" /></label>`;
   const fields = {
+    openai_api: apiKeyField,
+    google_gemini: apiKeyField,
+    deepseek_api: apiKeyField,
+    xai_grok: apiKeyField,
     discord_webhook: `<label>Webhook URL<input type="url" id="credUrl" required /></label>`,
     webhook_url: `<label>Webhook URL<input type="url" id="credUrl" required /></label>`,
     github_token: `<label>Personal Access Token<input type="password" id="credToken" required autocomplete="off" /></label>`,
@@ -1030,6 +1098,10 @@ function credentialFieldsForType(type) {
 
 function collectCredentialData(type) {
   switch (type) {
+    case "openai_api":
+    case "google_gemini":
+    case "deepseek_api":
+    case "xai_grok": return { apiKey: document.getElementById("credApiKey").value.trim() };
     case "discord_webhook":
     case "webhook_url": return { url: document.getElementById("credUrl").value.trim() };
     case "github_token":
@@ -1048,24 +1120,69 @@ function collectCredentialData(type) {
   }
 }
 
-function showNewCredentialModal() {
-  if (!connected) { addChatMessage("bot", "Server required to manage credentials."); return; }
-  showModal("Add Credential", `
-    <form id="newCredForm" class="credential-form-grid">
-      <label>Name<input id="credName" required placeholder="Production Discord Webhook" /></label>
-      <label>Type<select id="credType">
-        <option value="discord_webhook">Discord Webhook</option>
-        <option value="github_token">GitHub Token</option>
-        <option value="bearer_token">Bearer Token</option>
-        <option value="api_key">API Key</option>
-        <option value="smtp">SMTP</option>
-        <option value="google_service_account">Google Service Account</option>
-        <option value="webhook_url">Webhook URL</option>
-      </select></label>
-      <div id="credFields">${credentialFieldsForType("discord_webhook")}</div>
+function showQuickCredentialModal(provider) {
+  const preset = CREDENTIAL_PRESETS[provider] || { label: "API Key", name: "My API Key", hint: "Paste your API key below." };
+  showModal(`Connect ${preset.label}`, `
+    <p class="onboarding-subtitle">${preset.hint}</p>
+    <form id="quickCredForm" class="credential-form-grid">
+      <label>Label<input id="credName" required value="${escapeHtml(preset.name)}" /></label>
+      ${credentialFieldsForType(provider)}
+      ${!connected ? '<p class="onboarding-subtitle">Preview mode: saved in this browser. Connect the engine for encrypted vault + runs.</p>' : ""}
       <div class="modal-actions">
         <button type="button" class="ghost-button" data-close-modal>Cancel</button>
-        <button type="submit" class="primary-button">Store Encrypted</button>
+        <button type="submit" class="primary-button">Save key</button>
+      </div>
+    </form>`);
+  document.getElementById("quickCredForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const name = document.getElementById("credName").value.trim();
+      const data = collectCredentialData(provider);
+      const id = await persistCredential(name, provider, data);
+      closeModal();
+      await loadCredentials();
+      if (selectedNodeId) {
+        const selected = nodes.find((n) => n.id === selectedNodeId);
+        if (selected) {
+          if (!selected.config) selected.config = {};
+          selected.config.credentialId = id;
+          saveWorkflow();
+        }
+      }
+      renderInspector();
+      showToast(`${preset.label} key saved — pick it in your step settings.`, "success");
+    } catch (err) {
+      showToast(err.message, "info");
+    }
+  });
+}
+
+function showNewCredentialModal() {
+  showModal("Add API key", `
+    <form id="newCredForm" class="credential-form-grid">
+      <label>Name<input id="credName" required placeholder="My OpenAI Key" /></label>
+      <label>Type<select id="credType">
+        <optgroup label="AI models">
+          <option value="openai_api">OpenAI</option>
+          <option value="google_gemini">Google Gemini</option>
+          <option value="deepseek_api">DeepSeek</option>
+          <option value="xai_grok">xAI Grok</option>
+        </optgroup>
+        <optgroup label="Integrations">
+          <option value="discord_webhook">Discord Webhook</option>
+          <option value="github_token">GitHub Token</option>
+          <option value="smtp">SMTP</option>
+          <option value="google_service_account">Google Service Account</option>
+          <option value="webhook_url">Webhook URL</option>
+          <option value="bearer_token">Bearer Token</option>
+          <option value="api_key">Generic API Key</option>
+        </optgroup>
+      </select></label>
+      <div id="credFields">${credentialFieldsForType("openai_api")}</div>
+      ${!connected ? '<p class="onboarding-subtitle">Preview mode: saved in this browser until you connect the engine.</p>' : ""}
+      <div class="modal-actions">
+        <button type="button" class="ghost-button" data-close-modal>Cancel</button>
+        <button type="submit" class="primary-button">${connected ? "Store encrypted" : "Save key"}</button>
       </div>
     </form>`);
   const typeSelect = document.getElementById("credType");
@@ -1077,38 +1194,44 @@ function showNewCredentialModal() {
     try {
       const type = typeSelect.value;
       const data = collectCredentialData(type);
-      await apiFetch("/api/credentials", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: document.getElementById("credName").value.trim(), type, data }),
-      });
+      await persistCredential(document.getElementById("credName").value.trim(), type, data);
       closeModal();
       await loadCredentials();
       renderInspector();
-      addChatMessage("bot", "Credential stored in encrypted vault.");
+      showToast("API key saved.", "success");
     } catch (err) {
-      addChatMessage("bot", err.message);
+      showToast(err.message, "info");
     }
   });
 }
 
 function showCredentialDetail(id) {
-  const cred = credentialList.find((c) => c.id === id);
+  const cred = getActiveCredentials().find((c) => c.id === id);
   if (!cred) return;
+  const label = CREDENTIAL_PRESETS[cred.type]?.label || cred.type;
+  const storageNote = connected ? "Stored encrypted in the vault. Secrets never leave the server." : "Stored in this browser for preview — connect the engine for encrypted storage.";
   showModal(cred.name, `
-    <p class="onboarding-subtitle">Type: <strong>${escapeHtml(cred.type)}</strong><br>Stored AES-256-GCM encrypted. Secrets are never returned to the client.</p>
+    <p class="onboarding-subtitle">Type: <strong>${escapeHtml(label)}</strong><br>${storageNote}</p>
     <div class="modal-actions">
       <button type="button" class="ghost-button" data-close-modal>Close</button>
       <button type="button" class="danger-button" id="deleteCred">Delete</button>
     </div>`);
   document.getElementById("deleteCred").addEventListener("click", async () => {
     try {
-      await apiFetch(`/api/credentials/${id}`, { method: "DELETE" });
+      if (connected) {
+        await apiFetch(`/api/credentials/${id}`, { method: "DELETE" });
+      } else {
+        localCredentialList = localCredentialList.filter((c) => c.id !== id);
+        const secrets = JSON.parse(localStorage.getItem(`${LOCAL_CREDS_KEY}_secrets`) || "{}");
+        delete secrets[id];
+        localStorage.setItem(`${LOCAL_CREDS_KEY}_secrets`, JSON.stringify(secrets));
+        localStorage.setItem(LOCAL_CREDS_KEY, JSON.stringify(localCredentialList));
+      }
       closeModal();
       await loadCredentials();
       renderInspector();
-      addChatMessage("bot", "Credential removed.");
-    } catch (err) { addChatMessage("bot", err.message); }
+      showToast("API key removed.", "info");
+    } catch (err) { showToast(err.message, "info"); }
   });
 }
 
