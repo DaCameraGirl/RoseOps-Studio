@@ -137,6 +137,7 @@ async function init() {
   renderTemplates();
   await loadCredentials();
   await ensureStarterWorkflowsExist();
+  await repairAllStoredWorkflows();
   await loadWorkflowList();
   if (connected) setupSSE();
   updateGuidePanel();
@@ -271,10 +272,25 @@ async function loadStarterCatalog() {
   try {
     if (connected) {
       WORKFLOW_TEMPLATES = await (await apiFetch("/api/starter-workflows")).json();
-    } else {
-      const base = window.location.pathname.replace(/\/[^/]*$/, "/");
-      WORKFLOW_TEMPLATES = await (await fetch(`${base}starters.json`)).json();
+      return;
     }
+    const bases = [
+      window.location.pathname.replace(/\/[^/]*$/, "/"),
+      "/RoseOps-Studio/",
+      "./",
+    ];
+    for (const base of bases) {
+      try {
+        const res = await fetch(`${base}starters.json?v=10`);
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (Array.isArray(data) && data.length) {
+          WORKFLOW_TEMPLATES = data;
+          return;
+        }
+      } catch {}
+    }
+    WORKFLOW_TEMPLATES = [];
   } catch {
     WORKFLOW_TEMPLATES = [];
   }
@@ -391,6 +407,7 @@ async function loadWorkflow(id) {
   }
   if (!wf) wf = localDb.find(w => w.id === id);
   if (!wf) { await createWorkflow("Untitled", ""); return; }
+  wf = await persistRepairedWorkflow(wf);
   currentWorkflowId = wf.id; nodes = wf.nodes || []; connections = wf.connections || [];
   selectedNodeId = nodes[0]?.id ?? null; executionResults = {};
   workflowVersion = wf.version || 1;
@@ -489,6 +506,60 @@ function instantiateTemplateNodes(templateNodes) {
   }));
 }
 
+function findTemplateForWorkflow(wf) {
+  if (!WORKFLOW_TEMPLATES.length || !wf) return null;
+  if (wf.name === "Onboarding Pipeline") {
+    return WORKFLOW_TEMPLATES.find((t) => t.id === "api-pipeline") || null;
+  }
+  return WORKFLOW_TEMPLATES.find((t) => t.name === wf.name) || null;
+}
+
+function repairWorkflowNodes(wf) {
+  if (Array.isArray(wf.nodes) && wf.nodes.length > 0) return wf;
+  const template = findTemplateForWorkflow(wf);
+  if (!template?.nodes?.length) return wf;
+  return {
+    ...wf,
+    nodes: instantiateTemplateNodes(template.nodes),
+    connections: (template.connections || []).map(([f, t]) => [f, t]),
+    description: wf.description || template.description,
+  };
+}
+
+async function persistRepairedWorkflow(wf) {
+  const repaired = repairWorkflowNodes(wf);
+  if ((wf.nodes?.length || 0) === repaired.nodes.length) return repaired;
+  if (connected) {
+    try {
+      await apiFetch(`/api/workflows/${wf.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nodes: repaired.nodes, connections: repaired.connections, name: wf.name, description: repaired.description }),
+      });
+    } catch {}
+  } else {
+    const idx = localDb.findIndex((w) => w.id === wf.id);
+    if (idx >= 0) {
+      localDb[idx] = { ...localDb[idx], nodes: repaired.nodes, connections: repaired.connections, updated_at: new Date().toISOString() };
+      saveLocalDb();
+    }
+  }
+  showToast(`Loaded ${repaired.nodes.length} steps into "${repaired.name}"`, "success");
+  return repaired;
+}
+
+async function repairAllStoredWorkflows() {
+  let changed = false;
+  for (let i = 0; i < localDb.length; i++) {
+    const repaired = repairWorkflowNodes(localDb[i]);
+    if ((localDb[i].nodes?.length || 0) !== repaired.nodes.length) {
+      localDb[i] = { ...localDb[i], nodes: repaired.nodes, connections: repaired.connections };
+      changed = true;
+    }
+  }
+  if (changed) saveLocalDb();
+}
+
 async function cloneTemplate(template, opts = {}) {
   const name = opts.rename || template.name;
   const description = template.description;
@@ -537,17 +608,18 @@ async function cloneTemplate(template, opts = {}) {
 }
 
 async function createGuidedWorkflow() {
+  if (!WORKFLOW_TEMPLATES.length) await loadStarterCatalog();
   const guided = WORKFLOW_TEMPLATES.find((t) => t.id === "api-pipeline");
   if (guided) {
     await cloneTemplate({
       ...guided,
       name: "Onboarding Pipeline",
       description: "Standard API ingest pipeline — configure credentials before first run.",
-    });
+    }, { rename: "Onboarding Pipeline" });
   } else {
+    showToast("Templates didn't load — hit Browse templates or hard-refresh (Ctrl+Shift+R).", "info");
     await createWorkflow("Onboarding Pipeline", "Standard API ingest pipeline");
   }
-  addChatMessage("bot", "Pipeline deployed. Add credentials in the vault, link them in node inspector, then execute.");
 }
 
 function renderFlow() {
@@ -1462,7 +1534,33 @@ function updateGuidePanel() {
 
 function renderCanvasEmpty() {
   if (!els.canvasEmpty) return;
-  els.canvasEmpty.classList.toggle("hidden", !(nodes.length === 0 && currentWorkflowId));
+  const show = nodes.length === 0 && currentWorkflowId;
+  els.canvasEmpty.classList.toggle("hidden", !show);
+  if (!show) return;
+  const wfName = els.flowTitle?.textContent || "this workflow";
+  const template = findTemplateForWorkflow({ name: wfName });
+  const repairBtn = template
+    ? `<button type="button" class="primary-button" id="canvasRepairSteps">Load ${template.nodes.length} template steps</button>`
+    : "";
+  els.canvasEmpty.innerHTML = `
+    <div class="canvas-empty-card">
+      <div class="canvas-empty-icon" aria-hidden="true">✿</div>
+      <h3>No steps on the canvas</h3>
+      <p class="warn-steps">"${escapeHtml(wfName)}" is empty — that's why nothing shows up when you click it.</p>
+      <p>Load the template steps, or drag from <strong>Steps to add</strong> on the left.</p>
+      ${repairBtn}
+      <button type="button" class="ghost-button" id="canvasPickStarterInner">Browse templates</button>
+    </div>`;
+  els.canvasEmpty.querySelector("#canvasPickStarterInner")?.addEventListener("click", () => showWorkflowPickerModal());
+  els.canvasEmpty.querySelector("#canvasRepairSteps")?.addEventListener("click", async () => {
+    if (!currentWorkflowId) return;
+    let wf = null;
+    if (connected) {
+      try { wf = await (await apiFetch(`/api/workflows/${currentWorkflowId}`)).json(); } catch {}
+    }
+    if (!wf) wf = localDb.find((w) => w.id === currentWorkflowId) || { id: currentWorkflowId, name: wfName, nodes: [], connections: [] };
+    await loadWorkflow((await persistRepairedWorkflow(wf)).id);
+  });
 }
 
 function getNodesBounds() {

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RoseOps Studio — Enterprise Workflow Automation</title>
   <link rel="icon" href="assets/roseops-icon.ico" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=10" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&display=swap" rel="stylesheet" />
@@ -61,14 +61,16 @@
         <div class="template-list" id="credentialList"></div>
       </section>
 
-      <section class="panel panel-palette">
-        <h2>Steps to add</h2>
-        <p class="panel-hint">AI models &amp; integrations — drag onto the canvas →</p>
+      <details class="panel panel-palette palette-drawer" open>
+        <summary class="palette-drawer-summary">
+          <span>Steps to add</span>
+          <span class="panel-hint">drag onto canvas →</span>
+        </summary>
         <div class="palette-section-label">AI models</div>
         <div class="block-palette block-palette-ai" id="blockPaletteAi"></div>
         <div class="palette-section-label">Integrations</div>
         <div class="block-palette" id="blockPalette"></div>
-      </section>
+      </details>
     </aside>
 
     <main class="workspace">
@@ -192,6 +194,6 @@
 
   <div id="toastHost" class="toast-host" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
