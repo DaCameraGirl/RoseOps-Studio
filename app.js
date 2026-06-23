@@ -30,15 +30,34 @@ async function apiFetch(path, opts = {}) {
 
 const LOCAL_CREDS_KEY = "roseops_local_credentials";
 const AI_STEP_TYPES = new Set(["llm"]);
+const CREDENTIAL_CATEGORIES = [
+  { id: "all", label: "All" },
+  { id: "ai", label: "AI" },
+  { id: "webhooks", label: "Webhooks" },
+  { id: "auth", label: "Auth" },
+  { id: "email", label: "Email" },
+  { id: "integrations", label: "Cloud" },
+];
+
 const CREDENTIAL_PRESETS = {
-  openai_api: { label: "OpenAI", name: "My OpenAI Key", hint: "Trial credits — then paid. Key at platform.openai.com/api-keys" },
-  google_gemini: { label: "Google Gemini", name: "My Gemini Key", hint: "Free tier with rate limits. Key at aistudio.google.com/apikey" },
-  deepseek_api: { label: "DeepSeek", name: "My DeepSeek Key", hint: "Freemium usage. Key at platform.deepseek.com" },
-  xai_grok: { label: "xAI Grok", name: "My Grok Key", hint: "Free credits until they run out. Key at console.x.ai" },
-  anthropic_api: { label: "Anthropic Claude", name: "My Claude Key", hint: "Trial/free tier — then paid. Key at console.anthropic.com" },
-  azure_openai: { label: "Microsoft Copilot (Azure)", name: "My Azure OpenAI", hint: "Azure free credits for new accounts. Endpoint + key from portal.azure.com" },
-  ollama_local: { label: "Ollama (local)", name: "My PC — Ollama", hint: "Always free on your computer — PowerShell steps in Setup guide" },
+  openai_api: { label: "OpenAI", category: "ai", color: "#10a37f", name: "My OpenAI Key", hint: "Trial credits — then paid. Key at platform.openai.com/api-keys" },
+  google_gemini: { label: "Google Gemini", category: "ai", color: "#4285f4", name: "My Gemini Key", hint: "Free tier with rate limits. Key at aistudio.google.com/apikey" },
+  deepseek_api: { label: "DeepSeek", category: "ai", color: "#4d6bfe", name: "My DeepSeek Key", hint: "Freemium usage. Key at platform.deepseek.com" },
+  xai_grok: { label: "xAI Grok", category: "ai", color: "#1a1a1a", name: "My Grok Key", hint: "Free credits until they run out. Key at console.x.ai" },
+  anthropic_api: { label: "Anthropic Claude", category: "ai", color: "#d4a574", name: "My Claude Key", hint: "Trial/free tier — then paid. Key at console.anthropic.com" },
+  azure_openai: { label: "Microsoft Copilot (Azure)", category: "ai", color: "#0078d4", name: "My Azure OpenAI", hint: "Azure free credits for new accounts. Endpoint + key from portal.azure.com" },
+  ollama_local: { label: "Ollama (local)", category: "ai", color: "#000000", name: "My PC — Ollama", hint: "Always free on your computer — PowerShell steps in Setup guide" },
+  opencode_zen: { label: "OpenCode Zen", category: "ai", color: "#7c5cff", name: "My OpenCode Zen Key", hint: "Lots of free LLMs — key at opencode.ai/auth" },
+  discord_webhook: { label: "Discord Webhook", category: "webhooks", color: "#5865f2", name: "My Discord Webhook", hint: "Channel settings → Integrations → Webhooks → copy URL" },
+  webhook_url: { label: "Webhook URL", category: "webhooks", color: "#9b8ec4", name: "My Webhook", hint: "Any HTTPS endpoint that accepts POST payloads" },
+  github_token: { label: "GitHub Token", category: "auth", color: "#24292f", name: "My GitHub Token", hint: "github.com → Settings → Developer settings → Personal access tokens" },
+  bearer_token: { label: "Bearer Token", category: "auth", color: "#c24b73", name: "My Bearer Token", hint: "Authorization: Bearer … header for APIs" },
+  api_key: { label: "Generic API Key", category: "auth", color: "#e8739a", name: "My API Key", hint: "Custom header name + value for any REST API" },
+  smtp: { label: "SMTP Email", category: "email", color: "#b8a9d4", name: "My SMTP", hint: "Host, port, user, password — for Send Email steps" },
+  google_service_account: { label: "Google Service Account", category: "integrations", color: "#34a853", name: "My Google Service Account", hint: "JSON key from Google Cloud Console → IAM → Service accounts" },
 };
+
+let activeCredCategory = "all";
 
 const AI_PROVIDER_GUIDES = [
   {
@@ -53,9 +72,36 @@ const AI_PROVIDER_GUIDES = [
     model: "llama3.2",
     roseopsBtn: "Local",
     getKey: ["winget install Ollama.Ollama", "ollama pull llama3.2", "ollama list"],
-    inRoseOps: "API keys → Local → Save (default URL)",
+    inRoseOps: "Credentials → AI → Local → Save (default URL)",
     inWorkflow: "AI Chat → provider ollama → model llama3.2",
     psSnippet: "__LOCAL_PS__",
+  },
+  {
+    id: "opencode",
+    label: "OpenCode Zen",
+    cost: "Free models",
+    costDetail: "75+ providers via OpenCode — several models completely free on Zen (DeepSeek Flash Free, MiMo, Big Pickle, Nemotron…)",
+    signupUrl: "https://opencode.ai/auth",
+    signupText: "opencode.ai/auth",
+    preset: "opencode_zen",
+    provider: "opencode",
+    model: "deepseek-v4-flash-free",
+    roseopsBtn: "OpenCode",
+    getKey: ["Sign in at opencode.ai/auth", "Copy Zen API key", "Optional: install OpenCode CLI for terminal use"],
+    inRoseOps: "Credentials → AI → OpenCode → paste Zen key → Save",
+    inWorkflow: "AI Chat → provider opencode → model deepseek-v4-flash-free (or any Zen free model)",
+    psSnippet: `# Install OpenCode in PowerShell (optional CLI — pick one):
+npm i -g opencode-ai@latest
+# scoop install opencode
+# choco install opencode
+
+# Get your FREE Zen API key: https://opencode.ai/auth
+# List models: https://opencode.ai/zen/v1/models
+
+# Test a FREE model (replace YOUR_ZEN_KEY):
+$headers = @{ Authorization = "Bearer YOUR_ZEN_KEY"; "Content-Type" = "application/json" }
+$body = '{"model":"deepseek-v4-flash-free","messages":[{"role":"user","content":"Hello"}]}'
+Invoke-RestMethod -Uri "https://opencode.ai/zen/v1/chat/completions" -Method Post -Headers $headers -Body $body`,
   },
   {
     id: "gemini",
@@ -69,7 +115,7 @@ const AI_PROVIDER_GUIDES = [
     model: "gemini-1.5-flash",
     roseopsBtn: "Gemini",
     getKey: ["Sign in with Google", "Create API key", "Copy the key"],
-    inRoseOps: "API keys → Gemini → paste → Save",
+    inRoseOps: "Credentials → AI → Gemini → paste → Save",
     inWorkflow: "AI Chat → provider google → model gemini-1.5-flash",
     psSnippet: `# Test Gemini in PowerShell (replace YOUR_KEY):
 $key = "YOUR_KEY"
@@ -89,7 +135,7 @@ Invoke-RestMethod -Uri $uri -Method Post -ContentType "application/json" -Body $
     model: "deepseek-chat",
     roseopsBtn: "DeepSeek",
     getKey: ["Create account", "API keys → create", "Copy the key"],
-    inRoseOps: "API keys → DeepSeek → paste → Save",
+    inRoseOps: "Credentials → AI → DeepSeek → paste → Save",
     inWorkflow: "AI Chat → provider deepseek → model deepseek-chat",
     psSnippet: `# Test DeepSeek in PowerShell (replace YOUR_KEY):
 $headers = @{ Authorization = "Bearer YOUR_KEY"; "Content-Type" = "application/json" }
@@ -108,7 +154,7 @@ Invoke-RestMethod -Uri "https://api.deepseek.com/chat/completions" -Method Post 
     model: "claude-3-5-haiku-latest",
     roseopsBtn: "Claude",
     getKey: ["Sign up at console.anthropic.com", "API keys → Create", "Copy the key"],
-    inRoseOps: "API keys → Claude → paste → Save",
+    inRoseOps: "Credentials → AI → Claude → paste → Save",
     inWorkflow: "AI Chat → provider anthropic → model claude-3-5-haiku-latest",
     psSnippet: `# Test Claude in PowerShell (replace YOUR_KEY):
 $headers = @{
@@ -131,7 +177,7 @@ Invoke-RestMethod -Uri "https://api.anthropic.com/v1/messages" -Method Post -Hea
     model: "grok-2-latest",
     roseopsBtn: "Grok",
     getKey: ["Sign in at console.x.ai", "API keys → create", "Copy the key"],
-    inRoseOps: "API keys → Grok → paste → Save",
+    inRoseOps: "Credentials → AI → Grok → paste → Save",
     inWorkflow: "AI Chat → provider xai → model grok-2-latest",
     psSnippet: `# Test Grok in PowerShell (replace YOUR_KEY):
 $headers = @{ Authorization = "Bearer YOUR_KEY"; "Content-Type" = "application/json" }
@@ -150,7 +196,7 @@ Invoke-RestMethod -Uri "https://api.x.ai/v1/chat/completions" -Method Post -Head
     model: "gpt-4o-mini",
     roseopsBtn: "Copilot",
     getKey: ["Create Azure OpenAI resource", "Deploy a model (e.g. gpt-4o-mini)", "Copy endpoint + key + deployment name"],
-    inRoseOps: "API keys → Copilot → endpoint, deployment, key → Save",
+    inRoseOps: "Credentials → AI → Copilot → endpoint, deployment, key → Save",
     inWorkflow: "AI Chat → provider azure → model = deployment name",
     psSnippet: `# Test Azure OpenAI / Copilot API in PowerShell:
 $endpoint = "https://YOUR-RESOURCE.openai.azure.com"
@@ -173,7 +219,7 @@ Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body`,
     model: "gpt-4o-mini",
     roseopsBtn: "OpenAI",
     getKey: ["Sign up / sign in", "API keys → Create secret key", "Copy immediately"],
-    inRoseOps: "API keys → OpenAI → paste → Save",
+    inRoseOps: "Credentials → AI → OpenAI → paste → Save",
     inWorkflow: "AI Chat → provider openai → model gpt-4o-mini",
     psSnippet: `# Test OpenAI in PowerShell (replace YOUR_KEY):
 $headers = @{ Authorization = "Bearer YOUR_KEY"; "Content-Type" = "application/json" }
@@ -185,7 +231,7 @@ Invoke-RestMethod -Uri "https://api.openai.com/v1/chat/completions" -Method Post
 let localCredentialList = [];
 let blockTypes = [
   { type: "trigger", name: "Trigger", icon: "\u2726", color: "#e8739a", config: [{ key: "triggerType", label: "Type", type: "select", options: ["Manual", "Webhook", "Schedule"], default: "Manual" }], defaults: { channel: "Manual", priority: "Normal", mode: "Auto" } },
-  { type: "llm", name: "AI Chat", icon: "AI", color: "#7c5cff", config: [{ key: "provider", label: "Provider", type: "select", options: ["openai", "google", "deepseek", "xai", "anthropic", "azure", "ollama"], default: "openai" }, { key: "credentialId", label: "API Key", type: "credential", credentialTypes: ["openai_api", "google_gemini", "deepseek_api", "xai_grok", "anthropic_api", "azure_openai", "ollama_local", "bearer_token"], default: "" }, { key: "model", label: "Model", type: "string", default: "gpt-4o-mini" }, { key: "systemPrompt", label: "System prompt", type: "code", default: "You are a helpful assistant." }, { key: "userPrompt", label: "User prompt", type: "code", default: "{{message}}" }, { key: "temperature", label: "Temperature", type: "number", default: 0.7 }], defaults: { channel: "LLM", priority: "Normal", mode: "Auto" } },
+  { type: "llm", name: "AI Chat", icon: "AI", color: "#7c5cff", config: [{ key: "provider", label: "Provider", type: "select", options: ["openai", "google", "deepseek", "xai", "anthropic", "azure", "opencode", "ollama"], default: "openai" }, { key: "credentialId", label: "API Key", type: "credential", credentialTypes: ["openai_api", "google_gemini", "deepseek_api", "xai_grok", "anthropic_api", "azure_openai", "opencode_zen", "ollama_local", "bearer_token"], default: "" }, { key: "model", label: "Model", type: "string", default: "gpt-4o-mini" }, { key: "systemPrompt", label: "System prompt", type: "code", default: "You are a helpful assistant." }, { key: "userPrompt", label: "User prompt", type: "code", default: "{{message}}" }, { key: "temperature", label: "Temperature", type: "number", default: 0.7 }], defaults: { channel: "LLM", priority: "Normal", mode: "Auto" } },
   { type: "http", name: "HTTP Request", icon: "HTTP", color: "#b8a9d4", config: [{ key: "url", label: "URL", type: "string", default: "https://api.example.com" }, { key: "method", label: "Method", type: "select", options: ["GET", "POST", "PUT", "PATCH", "DELETE"], default: "GET" }, { key: "headers", label: "Headers", type: "code", default: "{}" }, { key: "body", label: "Body", type: "code", default: "{}" }], defaults: { channel: "API", priority: "Normal", mode: "Auto" } },
   { type: "code", name: "Code", icon: "</>", color: "#a8d8c8", config: [{ key: "code", label: "JavaScript", type: "code", default: "return { result: data };" }], defaults: { channel: "JS", priority: "Normal", mode: "Auto" } },
   { type: "delay", name: "Delay", icon: "WAIT", color: "#e8c87a", config: [{ key: "duration", label: "ms", type: "number", default: 1000 }], defaults: { channel: "Timer", priority: "Low", mode: "Auto" } },
@@ -258,7 +304,7 @@ async function init() {
     e.preventDefault(); const value = els.chatInput.value; els.chatInput.value = ""; handleChatCommand(value);
   });
   els.newWorkflow.addEventListener("click", () => showWorkflowPickerModal());
-  if (els.newCredential) els.newCredential.addEventListener("click", () => showNewCredentialModal());
+  if (els.newCredential) els.newCredential.addEventListener("click", () => showNewCredentialModal(null, activeCredCategory));
   if (els.connectionStatus) els.connectionStatus.addEventListener("click", () => showSetupGuideModal());
   els.openSetupGuide?.addEventListener("click", () => showSetupGuideModal());
   els.openSetupGuideSide?.addEventListener("click", () => showSetupGuideModal());
@@ -270,6 +316,7 @@ async function init() {
     if (btn.dataset.guideAction === "local") showSetupGuideModal("local");
   });
   renderKeyProviderPick();
+  renderCredCategoryTabs();
   document.getElementById("keyProviderAdd")?.addEventListener("click", () => {
     const preset = document.getElementById("keyProviderPick")?.value;
     if (!preset) {
@@ -507,9 +554,23 @@ function getSetupGuideBodyHtml(activeAiTab = "local") {
         <tr><td>Self-hosters</td><td>Deploy <code>server.js</code> → <strong>Connect engine</strong> → paste your URL</td></tr>
       </tbody>
     </table>
+    <div class="setup-free-callout">
+      <p class="howto-checklist-title">Try free options first — no card required</p>
+      <table class="howto-table howto-table-compact">
+        <thead><tr><th>Option</th><th>Cost</th><th>Get started</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Ollama (local)</strong></td><td>Always free</td><td><a href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a></td></tr>
+          <tr><td><strong>OpenCode Zen</strong></td><td>Free models</td><td><a href="https://opencode.ai/auth" target="_blank" rel="noopener">opencode.ai/auth</a></td></tr>
+          <tr><td><strong>Google Gemini</strong></td><td>Free tier</td><td><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a></td></tr>
+          <tr><td><strong>DeepSeek</strong></td><td>Freemium</td><td><a href="https://platform.deepseek.com" target="_blank" rel="noopener">platform.deepseek.com</a></td></tr>
+          <tr><td><strong>xAI Grok</strong></td><td>Free credits</td><td><a href="https://console.x.ai" target="_blank" rel="noopener">console.x.ai</a></td></tr>
+        </tbody>
+      </table>
+      <p class="onboarding-subtitle">Paid providers (OpenAI, Claude, Azure) are optional — only add them if free tiers aren't enough.</p>
+    </div>
     <h3 class="howto-section-title" id="setup-keys">2 · All AI providers — pick a tab</h3>
     <p class="onboarding-subtitle">Use the <strong>dropdown</strong> or <strong>tabs</strong> below — each provider has setup steps + <strong>PowerShell</strong> commands to install or test. Free until limits hit (Local is always free).</p>
-    <p class="onboarding-subtitle"><strong>First:</strong> connect the engine (section 1). Then add keys in <strong>API keys</strong> sidebar dropdown.</p>
+    <p class="onboarding-subtitle"><strong>First:</strong> connect the engine (section 1). Then save keys in the <strong>Credentials</strong> sidebar (AI tab for models; Webhooks / Auth / Email for integrations).</p>
     ${buildAiProvidersTableHtml()}
     ${buildAiProviderTabsHtml(activeAiTab)}
     <div class="howto-troubleshoot">
@@ -521,7 +582,7 @@ function getSetupGuideBodyHtml(activeAiTab = "local") {
         <li><strong>Azure / Copilot</strong> — model must match your <strong>deployment name</strong> exactly</li>
       </ul>
     </div>
-    <p class="onboarding-subtitle">Assistant: <code>gemini</code> · <code>deepseek</code> · <code>claude</code> · <code>grok</code> · <code>copilot</code> · <code>openai</code> · <code>ollama</code> · <code>keys</code></p>`;
+    <p class="onboarding-subtitle">Assistant: <code>opencode</code> · <code>gemini</code> · <code>deepseek</code> · <code>claude</code> · <code>grok</code> · <code>copilot</code> · <code>openai</code> · <code>ollama</code> · <code>keys</code></p>`;
 }
 
 function bindSetupGuideAiButtons() {
@@ -543,14 +604,14 @@ function renderSetupDrawer() {
     : IS_GITHUB_PAGES
       ? `<p class="setup-status setup-status-warn"><strong>Preview mode</strong> — build flows here; <strong>Run workflow</strong> needs the engine.</p>`
       : `<p class="setup-status setup-status-warn"><strong>Engine offline</strong> — run <code>npm start</code> in the project folder.</p>`;
-  const keyCount = getCredentialList().length;
+  const credCount = getActiveCredentials().length;
   els.setupDrawerBody.innerHTML = `
     ${status}
-    <p class="setup-path-label">Free AI — pick one (sidebar buttons):</p>
+    <p class="setup-path-label">Free AI — pick one (Credentials sidebar):</p>
     <ul class="setup-ai-list">
       ${AI_PROVIDER_GUIDES.map((p) => `<li><strong>${p.roseopsBtn}</strong> <span class="ai-free-badge ai-free-badge-sm">${p.cost}</span></li>`).join("")}
     </ul>
-    <p class="setup-keys-note">${keyCount ? `${keyCount} API key${keyCount === 1 ? "" : "s"} saved` : "No API keys yet"}</p>
+    <p class="setup-keys-note">${credCount ? `${credCount} credential${credCount === 1 ? "" : "s"} saved` : "No credentials yet"}</p>
     <div class="setup-drawer-actions">
       <button type="button" class="ghost-button" id="drawerFullGuide">Full guide</button>
       <button type="button" class="ghost-button" id="drawerAiKeys">All AI setup</button>
@@ -596,6 +657,51 @@ function renderKeyProviderPick() {
   sel.innerHTML = `<option value="">Choose provider…</option>${AI_PROVIDER_GUIDES.map((p) =>
     `<option value="${p.preset}">${p.label} — ${p.cost}</option>`
   ).join("")}`;
+}
+
+function getCredentialMeta(type) {
+  return CREDENTIAL_PRESETS[type] || { label: type, category: "auth", color: "#7c5cff" };
+}
+
+function credentialsForCategory(list, category) {
+  if (!category || category === "all") return list;
+  return list.filter((c) => getCredentialMeta(c.type).category === category);
+}
+
+function renderCredCategoryTabs() {
+  const root = document.getElementById("credCategoryTabs");
+  if (!root) return;
+  const list = getActiveCredentials();
+  root.innerHTML = CREDENTIAL_CATEGORIES.map((cat) => {
+    const count = cat.id === "all" ? list.length : credentialsForCategory(list, cat.id).length;
+    const badge = count ? `<span class="cred-cat-count">${count}</span>` : "";
+    return `<button type="button" class="cred-category-tab${activeCredCategory === cat.id ? " active" : ""}" role="tab" aria-selected="${activeCredCategory === cat.id}" data-cred-cat="${cat.id}">${cat.label}${badge}</button>`;
+  }).join("");
+  root.querySelectorAll("[data-cred-cat]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeCredCategory = btn.dataset.credCat;
+      renderCredCategoryTabs();
+      renderCredentialCards(getActiveCredentials());
+    });
+  });
+  updateCredVaultUi();
+}
+
+function updateCredVaultUi() {
+  const aiQuick = document.getElementById("credVaultAiQuick");
+  if (aiQuick) aiQuick.classList.toggle("hidden", activeCredCategory !== "all" && activeCredCategory !== "ai");
+  const countEl = document.getElementById("credVaultCount");
+  if (!countEl) return;
+  const list = getActiveCredentials();
+  if (!list.length) {
+    countEl.textContent = "";
+    return;
+  }
+  const parts = CREDENTIAL_CATEGORIES.filter((c) => c.id !== "all").map((cat) => {
+    const n = credentialsForCategory(list, cat.id).length;
+    return n ? `${n} ${cat.label.toLowerCase()}` : "";
+  }).filter(Boolean);
+  countEl.textContent = `${list.length} saved${parts.length ? ` · ${parts.join(" · ")}` : ""}`;
 }
 
 function showHowToConnectModal() {
@@ -793,17 +899,24 @@ async function loadWorkflowList() {
 
 function renderCredentialCards(list) {
   if (!els.credentialList) return;
+  const filtered = credentialsForCategory(list, activeCredCategory);
+  renderCredCategoryTabs();
   els.credentialList.innerHTML = "";
-  if (!list.length) {
-    els.credentialList.innerHTML = `<div class="workflow-empty"><p>No API keys yet — pick a provider in the dropdown above. <button type="button" class="guide-inline-link" id="credListSetupHelp">Open setup tabs</button></p></div>`;
+  if (!filtered.length) {
+    const catLabel = CREDENTIAL_CATEGORIES.find((c) => c.id === activeCredCategory)?.label || "credentials";
+    const emptyMsg = activeCredCategory === "ai" || activeCredCategory === "all"
+      ? `No credentials yet — pick a free AI provider above or <button type="button" class="guide-inline-link" id="credListSetupHelp">open setup guide</button>.`
+      : `No ${catLabel.toLowerCase()} credentials — tap <strong>+ Add</strong> to store one.`;
+    els.credentialList.innerHTML = `<div class="workflow-empty"><p>${emptyMsg}</p></div>`;
     document.getElementById("credListSetupHelp")?.addEventListener("click", () => showSetupGuideModal("keys"));
     return;
   }
-  list.forEach((cred) => {
+  filtered.forEach((cred) => {
     const btn = document.createElement("button");
     btn.className = "template-card";
-    const label = CREDENTIAL_PRESETS[cred.type]?.label || cred.type;
-    btn.innerHTML = `<span class="tile-icon" style="background:#7c5cff">${label.slice(0, 2).toUpperCase()}</span><span><strong>${escapeHtml(cred.name)}</strong><span>${escapeHtml(label)}</span><span class="card-cta">Tap to view →</span></span>`;
+    const meta = getCredentialMeta(cred.type);
+    const catLabel = CREDENTIAL_CATEGORIES.find((c) => c.id === meta.category)?.label || meta.category;
+    btn.innerHTML = `<span class="tile-icon" style="background:${meta.color}">${meta.label.slice(0, 2).toUpperCase()}</span><span><strong>${escapeHtml(cred.name)}</strong><span>${escapeHtml(meta.label)} <span class="cred-type-badge">${escapeHtml(catLabel)}</span></span><span class="card-cta">Tap to view →</span></span>`;
     btn.addEventListener("click", () => showCredentialDetail(cred.id));
     els.credentialList.appendChild(btn);
   });
@@ -914,6 +1027,10 @@ function loadLocalCredentials() {
 
 function getActiveCredentials() {
   return connected ? credentialList : localCredentialList;
+}
+
+function getCredentialList() {
+  return getActiveCredentials();
 }
 
 async function persistCredential(name, type, data) {
@@ -1227,7 +1344,7 @@ function renderInspector() {
     });
     els.nodeConfig.querySelectorAll(".cred-inline-add").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const provider = selected.type === "llm" ? { openai: "openai_api", google: "google_gemini", deepseek: "deepseek_api", xai: "xai_grok", anthropic: "anthropic_api", azure: "azure_openai", ollama: "ollama_local" }[selected.config?.provider] || "openai_api" : "api_key";
+        const provider = selected.type === "llm" ? { openai: "openai_api", google: "google_gemini", deepseek: "deepseek_api", xai: "xai_grok", anthropic: "anthropic_api", azure: "azure_openai", opencode: "opencode_zen", ollama: "ollama_local" }[selected.config?.provider] || "openai_api" : "api_key";
         showQuickCredentialModal(provider);
       });
     });
@@ -1537,9 +1654,12 @@ function handleChatCommand(raw) {
     if (match) { addBlock(match.type); addChatMessage("bot", `Added ${match.name}.`); }
     else { addChatMessage("bot", `Unknown. Try: add http / add code / add delay / add webhook / add schedule / add email`); }
   } else if (lower === "help" || lower === "?") {
-    addChatMessage("bot", "Commands: run · connect · gemini · deepseek · claude · grok · copilot · openai · ollama · keys · help");
+    addChatMessage("bot", "Commands: run · connect · opencode · gemini · deepseek · claude · grok · copilot · openai · ollama · keys · help");
   } else if (lower === "connect" || lower === "engine" || lower === "setup") {
     showSetupGuideModal("engine");
+  } else if (lower === "opencode" || lower === "zen") {
+    showSetupGuideModal("opencode");
+    showQuickCredentialModal("opencode_zen");
   } else if (lower === "gemini" || lower === "google") {
     showSetupGuideModal("gemini");
     showQuickCredentialModal("google_gemini");
@@ -1632,6 +1752,7 @@ function credentialFieldsForType(type) {
     deepseek_api: apiKeyField,
     xai_grok: apiKeyField,
     anthropic_api: apiKeyField,
+    opencode_zen: `<p class="onboarding-subtitle">Free models on <a href="https://opencode.ai/zen" target="_blank" rel="noopener">OpenCode Zen</a> — try <code>deepseek-v4-flash-free</code>, <code>mimo-v2.5-free</code>, <code>big-pickle</code>. Key at <a href="https://opencode.ai/auth" target="_blank" rel="noopener">opencode.ai/auth</a>.</p>${apiKeyField}`,
     azure_openai: `<label>Azure endpoint<input type="url" id="credAzureEndpoint" placeholder="https://your-resource.openai.azure.com" required /></label>
       <label>Deployment name<input id="credAzureDeployment" value="gpt-4o-mini" required autocomplete="off" /></label>
       <label>API key<input type="password" id="credApiKey" required autocomplete="off" /></label>
@@ -1657,7 +1778,8 @@ function collectCredentialData(type) {
     case "google_gemini":
     case "deepseek_api":
     case "xai_grok":
-    case "anthropic_api": return { apiKey: document.getElementById("credApiKey").value.trim() };
+    case "anthropic_api":
+    case "opencode_zen": return { apiKey: document.getElementById("credApiKey").value.trim() };
     case "azure_openai": return {
       endpoint: document.getElementById("credAzureEndpoint").value.trim().replace(/\/$/, ""),
       deployment: document.getElementById("credAzureDeployment").value.trim(),
@@ -1727,8 +1849,20 @@ function showQuickCredentialModal(provider) {
   });
 }
 
-function showNewCredentialModal() {
-  showModal("Add API key", `
+function defaultTypeForCategory(category) {
+  const map = {
+    ai: "google_gemini",
+    webhooks: "discord_webhook",
+    auth: "bearer_token",
+    email: "smtp",
+    integrations: "google_service_account",
+  };
+  return map[category] || "openai_api";
+}
+
+function showNewCredentialModal(presetType = null, presetCategory = "all") {
+  const defaultType = presetType || (presetCategory !== "all" ? defaultTypeForCategory(presetCategory) : "openai_api");
+  showModal("Add credential", `
     <form id="newCredForm" class="credential-form-grid">
       <label>Name<input id="credName" required placeholder="My OpenAI Key" /></label>
       <label>Type<select id="credType">
@@ -1739,6 +1873,7 @@ function showNewCredentialModal() {
           <option value="xai_grok">xAI Grok</option>
           <option value="anthropic_api">Anthropic Claude</option>
           <option value="azure_openai">Microsoft Copilot (Azure)</option>
+          <option value="opencode_zen">OpenCode Zen (free models)</option>
           <option value="ollama_local">Ollama (local, free)</option>
         </optgroup>
         <optgroup label="Integrations">
@@ -1751,7 +1886,7 @@ function showNewCredentialModal() {
           <option value="api_key">Generic API Key</option>
         </optgroup>
       </select></label>
-      <div id="credFields">${credentialFieldsForType("openai_api")}</div>
+      <div id="credFields">${credentialFieldsForType(defaultType)}</div>
       ${!connected ? '<p class="onboarding-subtitle">Preview mode: saved in this browser until you connect the engine.</p>' : ""}
       <div class="modal-actions">
         <button type="button" class="ghost-button" data-close-modal>Cancel</button>
@@ -1759,6 +1894,7 @@ function showNewCredentialModal() {
       </div>
     </form>`);
   const typeSelect = document.getElementById("credType");
+  typeSelect.value = defaultType;
   typeSelect.addEventListener("change", () => {
     document.getElementById("credFields").innerHTML = credentialFieldsForType(typeSelect.value);
   });
@@ -1771,7 +1907,7 @@ function showNewCredentialModal() {
       closeModal();
       await loadCredentials();
       renderInspector();
-      showToast("API key saved.", "success");
+      showToast("Credential saved.", "success");
     } catch (err) {
       showToast(err.message, "info");
     }
@@ -1803,7 +1939,7 @@ function showCredentialDetail(id) {
       closeModal();
       await loadCredentials();
       renderInspector();
-      showToast("API key removed.", "info");
+      showToast("Credential removed.", "info");
     } catch (err) { showToast(err.message, "info"); }
   });
 }

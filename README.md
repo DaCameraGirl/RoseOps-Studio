@@ -72,10 +72,11 @@ In the app: type **`connect`** in Assistant chat, or click the connection status
 
 ### Free AI options (all providers)
 
-**Setup guide → section 2** has a **dropdown + tabs** per provider (Local, Gemini, DeepSeek, Claude, Grok, Copilot, OpenAI) with PowerShell install/test commands.
+**Setup guide → section 2** has a **dropdown + tabs** per provider (OpenCode, Local, Gemini, DeepSeek, Claude, Grok, Copilot, OpenAI) with PowerShell install/test commands.
 
 | Provider | Cost |
 |----------|------|
+| **OpenCode Zen** | **Free models** (DeepSeek Flash Free, MiMo, Big Pickle, Nemotron…) |
 | **Local (Ollama)** | Always free |
 | **Gemini** | Free tier |
 | **DeepSeek** | Freemium |
@@ -152,6 +153,7 @@ RoseOps = **studio** (UI) + **engine** (`server.js`). GitHub Pages is preview-on
 
 | Tab | Provider | Free until… | PowerShell in guide |
 |-----|----------|-------------|---------------------|
+| OpenCode | OpenCode Zen | Many models free | `npm i -g opencode-ai`, Zen API test |
 | Local | Ollama | Always free | `winget install Ollama.Ollama`, `ollama pull llama3.2` |
 | Gemini | Google | Rate limits | `Invoke-RestMethod` test |
 | DeepSeek | DeepSeek | Freemium limits | API test script |
