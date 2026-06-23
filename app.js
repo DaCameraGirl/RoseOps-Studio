@@ -402,7 +402,7 @@ function showPagesDeployBanner() {
     <button type="button" class="ghost-button" id="howToConnect">How to connect</button>
     <button type="button" class="ghost-button" id="setApiUrl">Connect engine</button>
     <button type="button" class="icon-button" id="dismissPagesBanner" aria-label="Dismiss">&#215;</button>
-    <p class="pages-banner-steps">New here? <strong>1)</strong> Clone the repo · <strong>2)</strong> Run <code>npm install</code> then <code>npm start</code> · <strong>3)</strong> Open <code>localhost:3099</code> — or tap <strong>How to connect</strong> for all options.</p>`;
+    <p class="pages-banner-steps">New here? This URL is <strong>preview only</strong>. Full app: clone repo → <code>npm install</code> → <code>npm start</code> → <strong>localhost:3099</strong>. Tap <strong>Setup guide</strong> for the 12-step checklist.</p>`;
   document.querySelector(".workspace")?.prepend(banner);
   banner.querySelector("#dismissPagesBanner")?.addEventListener("click", () => banner.remove());
   banner.querySelector("#howToConnect")?.addEventListener("click", () => showSetupGuideModal());
@@ -452,16 +452,19 @@ function getProviderPsSnippet(p) {
 function buildAiProviderPanelHtml(p, active) {
   const ps = getProviderPsSnippet(p);
   const localExtra = p.id === "local" ? `
-    <p class="howto-code-label">RoseOps engine (PowerShell — first)</p>
-    <pre class="howto-code">${ROSEOPS_POWERSHELL}</pre>
     <div class="howto-checklist">
-      <p class="howto-checklist-title">Local checklist</p>
+      <p class="howto-checklist-title">Ollama path (two PowerShell windows)</p>
+      <p class="onboarding-subtitle"><strong>Window 1</strong> — RoseOps engine (keep open):</p>
+      <pre class="howto-code">${ROSEOPS_POWERSHELL}</pre>
+      <p class="onboarding-subtitle"><strong>Window 2</strong> — Ollama (after engine is online):</p>
       <ol class="howto-checklist-steps">
-        <li>Start RoseOps — <code>npm start</code> → <code>localhost:3099</code></li>
-        <li>Install Ollama — <code>winget install Ollama.Ollama</code></li>
-        <li>Pull model — <code>ollama pull llama3.2</code></li>
-        <li>Add <strong>Local</strong> key → AI Chat → <strong>ollama</strong> → Run</li>
+        <li><code>winget install Ollama.Ollama</code> — close and open a <em>new</em> PowerShell if install finishes</li>
+        <li><code>ollama pull llama3.2</code> — downloads the model (first time takes a few minutes)</li>
+        <li><code>ollama list</code> — you should see <code>llama3.2</code></li>
+        <li>In RoseOps: <strong>Credentials</strong> → add <strong>Local</strong> → default URL is fine → Save</li>
+        <li>AI Chat step → provider <code>ollama</code> → model <code>llama3.2</code> → pick your Local key → <strong>Run workflow</strong></li>
       </ol>
+      <p class="setup-success-note"><strong>Test Ollama alone:</strong> <code>ollama run llama3.2 "Say hello"</code> — if that works, RoseOps can reach it.</p>
     </div>` : "";
   return `
     <div class="ai-tab-panel${active ? " active" : ""}" id="ai-tab-${p.id}" data-ai-panel="${p.id}" role="tabpanel">
@@ -532,57 +535,133 @@ function getAiProviderId(scrollTo) {
   return "local";
 }
 
-function getSetupGuideBodyHtml(activeAiTab = "local") {
-  const pagesNote = IS_GITHUB_PAGES
-    ? `<p class="onboarding-subtitle">You're on <strong>GitHub Pages</strong> — great for browsing and building. Running workflows needs the engine (below).</p>`
+function buildSetupStartHereHtml() {
+  return `
+    <div class="setup-start-here" id="setup-start">
+      <p class="setup-start-eyebrow">New here? Read this first</p>
+      <p class="setup-start-lead">If automation tools felt like months of guessing, this guide is one straight path: <strong>engine → one free AI → run a template</strong>. You do not need every provider on day one.</p>
+      <ol class="setup-hour-steps">
+        <li><strong>Check you have Node.js</strong> — open PowerShell, type <code>node -v</code>. You should see <code>v20</code> or higher. If not: <a href="https://nodejs.org" target="_blank" rel="noopener">nodejs.org</a> → LTS → install → close and reopen PowerShell.</li>
+        <li><strong>Check you have Git</strong> — type <code>git --version</code>. If missing: <code>winget install Git.Git</code> → reopen PowerShell.</li>
+        <li><strong>Download RoseOps</strong> — in PowerShell: <code>cd $env:USERPROFILE\\Desktop</code> then <code>git clone ${REPO_CLONE_URL}</code>. You should see a new folder <code>RoseOps-Studio</code>.</li>
+        <li><strong>Install dependencies</strong> — <code>cd RoseOps-Studio</code> → <code>npm install</code> (wait 1–3 min; lots of text is normal).</li>
+        <li><strong>Create your config file</strong> — <code>Copy-Item .env.example .env</code> (creates <code>.env</code> with default keys; fine for local use).</li>
+        <li><strong>Start the engine</strong> — <code>npm start</code>. <strong>Leave this PowerShell window open.</strong> Browser should open <code>http://localhost:3099</code>.</li>
+        <li><strong>Confirm you're connected</strong> — top-left status should say <strong>● online</strong> (not <strong>● pages</strong> or <strong>● offline</strong>). If you're still on GitHub Pages, you're in preview-only mode.</li>
+        <li><strong>Pick ONE free AI</strong> — section 2 below. Easiest: <strong>Local (Ollama)</strong> on your PC, or <strong>Gemini</strong> if you want a browser key in 2 minutes.</li>
+        <li><strong>Save the key</strong> — left sidebar <strong>Credentials</strong> → AI tab → quick-add or <strong>+ Add</strong> → Save.</li>
+        <li><strong>Open a starter workflow</strong> — left sidebar <strong>Templates</strong> or <strong>+</strong> → choose <strong>AI Assistant</strong> (or any template).</li>
+        <li><strong>Wire the AI step</strong> — click the <strong>AI Chat</strong> box on the canvas → right panel → <strong>API Key</strong> dropdown → pick the key you saved.</li>
+        <li><strong>Run workflow</strong> — top bar <strong>▶ Run workflow</strong>. Bottom panel shows each step. Green <strong>Complete</strong> = it worked.</li>
+      </ol>
+      <p class="setup-success-note"><strong>You did it when:</strong> status is <strong>● online</strong>, Run shows <strong>Complete</strong>, and the AI step returns text in the run log.</p>
+    </div>`;
+}
+
+function buildSetupGlossaryHtml() {
+  return `
+    <div class="setup-glossary">
+      <p class="howto-checklist-title">Words we use (plain English)</p>
+      <dl class="setup-glossary-list">
+        <dt>Studio</dt><dd>This screen — drag steps, connect lines, build workflows. Works on GitHub Pages for <em>building only</em>.</dd>
+        <dt>Engine</dt><dd><code>server.js</code> on your PC (or a server you deploy). Actually <em>runs</em> workflows and stores keys encrypted. Without it, <strong>Run workflow</strong> cannot execute.</dd>
+        <dt>Workflow</dt><dd>A saved flow of steps (like an n8n workflow). Example: Trigger → AI Chat → HTTP Request.</dd>
+        <dt>Credentials</dt><dd>Saved API keys / tokens in the left sidebar vault — not pasted inside each step.</dd>
+        <dt>GitHub Pages</dt><dd>The public preview URL (<code>dacameragirl.github.io/...</code>). Great to look around; <strong>not</strong> the full app.</dd>
+        <dt>localhost:3099</dt><dd>The full app on <em>your</em> computer — studio + engine together. Bookmark this after <code>npm start</code>.</dd>
+      </dl>
+    </div>`;
+}
+
+function buildSetupEngineSectionHtml() {
+  const pagesVisitor = IS_GITHUB_PAGES
+    ? `<div class="setup-pages-callout">
+        <p class="howto-checklist-title">You are on GitHub Pages right now</p>
+        <p class="onboarding-subtitle">You can <strong>build</strong> workflows here, but <strong>Run workflow</strong> needs the engine on your PC. Follow the 12 steps above, then use <code>http://localhost:3099</code> — not this Pages URL — for real runs.</p>
+      </div>`
     : "";
   return `
-    ${pagesNote}
-    <h3 class="howto-section-title" id="setup-engine">1 · Connect the engine</h3>
-    <p class="onboarding-subtitle">RoseOps has two parts: the <strong>studio</strong> (this UI) and the <strong>engine</strong> (<code>server.js</code>) that runs workflows and stores API keys encrypted.</p>
+    ${pagesVisitor}
+    <h3 class="howto-section-title" id="setup-engine">1 · Get the engine running (required)</h3>
+    <p class="onboarding-subtitle">RoseOps = <strong>studio</strong> (this UI) + <strong>engine</strong> (<code>server.js</code>). Think of n8n's editor vs n8n actually executing — you need both for <strong>Run workflow</strong>.</p>
     <div class="howto-steps">
-      <div class="howto-step"><span class="howto-step-num">A</span><span><strong>Run on your computer (recommended)</strong><span><code>git clone ${REPO_CLONE_URL}</code> → <code>cd RoseOps-Studio</code> → <code>npm install</code> → copy <code>.env.example</code> to <code>.env</code> → <code>npm start</code> → open <code>http://localhost:3099</code>.</span></span></div>
-      <div class="howto-step"><span class="howto-step-num">B</span><span><strong>Desktop shortcut</strong><span>After cloning, double-click <code>start-roseops.cmd</code>. Same as A — opens localhost automatically.</span></span></div>
-      <div class="howto-step"><span class="howto-step-num">C</span><span><strong>GitHub Pages + engine</strong><span>Stay on this page for preview. Deploy <code>server.js</code> to Render/Railway, copy that URL, then <strong>Connect engine</strong> — or run locally and click <strong>I started RoseOps from my desktop icon</strong>.</span></span></div>
+      <div class="howto-step"><span class="howto-step-num">1</span><span><strong>Open PowerShell</strong><span>Start menu → type <strong>PowerShell</strong> → open it. You'll run commands here.</span></span></div>
+      <div class="howto-step"><span class="howto-step-num">2</span><span><strong>Go to Desktop</strong><span><code>cd $env:USERPROFILE\\Desktop</code></span></span></div>
+      <div class="howto-step"><span class="howto-step-num">3</span><span><strong>Clone the repo</strong><span><code>git clone ${REPO_CLONE_URL}</code> → <code>cd RoseOps-Studio</code></span></span></div>
+      <div class="howto-step"><span class="howto-step-num">4</span><span><strong>Install &amp; configure</strong><span><code>npm install</code> → <code>Copy-Item .env.example .env</code></span></span></div>
+      <div class="howto-step"><span class="howto-step-num">5</span><span><strong>Start (keep window open)</strong><span><code>npm start</code> → browser opens <code>http://localhost:3099</code>. Status: <strong>● online</strong>.</span></span></div>
     </div>
-    <table class="howto-table">
-      <thead><tr><th>Who</th><th>What to do</th></tr></thead>
-      <tbody>
-        <tr><td>New users</td><td>Clone → <code>npm install</code> → <code>npm start</code> → <code>localhost:3099</code></td></tr>
-        <tr><td>Desktop shortcut</td><td>Run <code>start-roseops.cmd</code></td></tr>
-        <tr><td>Pages visitors</td><td><strong>Setup guide</strong> (sidebar) or status badge <strong>● pages</strong></td></tr>
-        <tr><td>Self-hosters</td><td>Deploy <code>server.js</code> → <strong>Connect engine</strong> → paste your URL</td></tr>
-      </tbody>
-    </table>
+    <p class="howto-code-label">Copy-paste block (PowerShell)</p>
+    <pre class="howto-code">${ROSEOPS_POWERSHELL}</pre>
+    <details class="setup-alt-path">
+      <summary>Shortcut: double-click <code>start-roseops.cmd</code> instead</summary>
+      <p class="onboarding-subtitle">After you've cloned once, open the <code>RoseOps-Studio</code> folder on Desktop → double-click <code>start-roseops.cmd</code>. Same as <code>npm start</code> — kills stale port, starts engine, opens browser.</p>
+    </details>
+    <details class="setup-alt-path">
+      <summary>Advanced: GitHub Pages + engine on a server</summary>
+      <p class="onboarding-subtitle">Stay on Pages to browse. Deploy <code>server.js</code> to Render or Railway, copy the URL, click <strong>Connect engine</strong> in the top bar, paste URL. Most new users should use <code>localhost:3099</code> first.</p>
+    </details>`;
+}
+
+function buildSetupFirstRunHtml() {
+  return `
+    <h3 class="howto-section-title" id="setup-first-run">3 · Run your first workflow (after engine + one AI key)</h3>
+    <ol class="howto-checklist-steps setup-first-run-steps">
+      <li>Left sidebar → <strong>Templates</strong> (or <strong>+</strong>) → pick <strong>AI Assistant</strong>.</li>
+      <li>Canvas shows connected steps. Click the <strong>AI Chat</strong> step.</li>
+      <li>Right panel → <strong>API Key</strong> → choose the credential you saved in section 2.</li>
+      <li>Top bar → <strong>▶ Run workflow</strong>.</li>
+      <li>Watch the <strong>Run log</strong> at the bottom. Each step should turn green. Final state: <strong>Complete</strong>.</li>
+    </ol>
+    <p class="onboarding-subtitle"><strong>Stuck?</strong> If Run is greyed out or says engine offline, you're not on <code>localhost:3099</code> or <code>npm start</code> isn't running.</p>`;
+}
+
+function buildSetupTroubleshootHtml() {
+  return `
+    <div class="howto-troubleshoot" id="setup-troubleshoot">
+      <p class="howto-checklist-title">If something fails (common new-user fixes)</p>
+      <ul class="howto-troubleshoot-list">
+        <li><strong>I built a flow but Run does nothing</strong> — You're on GitHub Pages preview. Clone repo → <code>npm start</code> → use <code>localhost:3099</code>, not the <code>github.io</code> URL.</li>
+        <li><strong>Status says ● pages or ● offline</strong> — Engine not connected. Start <code>npm start</code> in PowerShell and keep that window open.</li>
+        <li><strong><code>npm</code> is not recognized</strong> — Install Node.js LTS from <a href="https://nodejs.org" target="_blank" rel="noopener">nodejs.org</a>, restart PowerShell.</li>
+        <li><strong><code>git</code> is not recognized</strong> — <code>winget install Git.Git</code> → restart PowerShell.</li>
+        <li><strong>Port 3099 already in use</strong> — Close old RoseOps windows, or run <code>start-roseops.cmd</code> (it clears the port first).</li>
+        <li><strong>AI step errors / 401</strong> — Re-copy API key (no spaces). In AI Chat step, provider must match key type (e.g. Gemini key → provider <code>google</code>).</li>
+        <li><strong>Ollama errors</strong> — New PowerShell window: <code>ollama list</code>. Empty? Run <code>ollama pull llama3.2</code>.</li>
+        <li><strong>Azure / Copilot</strong> — Model field must equal your Azure <strong>deployment name</strong>, not the marketing name.</li>
+        <li><strong>Canvas looks empty after picking a template</strong> — Click <strong>Show all steps</strong> in the top bar, or pick template again from <strong>+</strong>.</li>
+      </ul>
+    </div>`;
+}
+
+function getSetupGuideBodyHtml(activeAiTab = "local") {
+  return `
+    ${buildSetupStartHereHtml()}
+    ${buildSetupGlossaryHtml()}
+    ${buildSetupEngineSectionHtml()}
     <div class="setup-free-callout">
-      <p class="howto-checklist-title">Try free options first — no card required</p>
+      <p class="howto-checklist-title">Pick ONE free AI to start (not all of them)</p>
+      <p class="onboarding-subtitle">You only need <strong>one</strong> working key for your first run. Add more later.</p>
       <table class="howto-table howto-table-compact">
-        <thead><tr><th>Option</th><th>Cost</th><th>Get started</th></tr></thead>
+        <thead><tr><th>Best for beginners</th><th>Cost</th><th>Why start here</th><th>Get started</th></tr></thead>
         <tbody>
-          <tr><td><strong>Ollama (local)</strong></td><td>Always free</td><td><a href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a></td></tr>
-          <tr><td><strong>OpenCode Zen</strong></td><td>Free models</td><td><a href="https://opencode.ai/auth" target="_blank" rel="noopener">opencode.ai/auth</a></td></tr>
-          <tr><td><strong>Google Gemini</strong></td><td>Free tier</td><td><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a></td></tr>
-          <tr><td><strong>DeepSeek</strong></td><td>Freemium</td><td><a href="https://platform.deepseek.com" target="_blank" rel="noopener">platform.deepseek.com</a></td></tr>
-          <tr><td><strong>xAI Grok</strong></td><td>Free credits</td><td><a href="https://console.x.ai" target="_blank" rel="noopener">console.x.ai</a></td></tr>
+          <tr><td><strong>Local (Ollama)</strong></td><td>Always free</td><td>No signup, runs on your PC, private</td><td><a href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a></td></tr>
+          <tr><td><strong>Google Gemini</strong></td><td>Free tier</td><td>Fastest cloud key (Google sign-in, ~2 min)</td><td><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a></td></tr>
+          <tr><td><strong>OpenCode Zen</strong></td><td>Free models</td><td>Many free models, one key</td><td><a href="https://opencode.ai/auth" target="_blank" rel="noopener">opencode.ai/auth</a></td></tr>
+          <tr><td><strong>DeepSeek</strong></td><td>Freemium</td><td>Good chat model, simple API key</td><td><a href="https://platform.deepseek.com" target="_blank" rel="noopener">platform.deepseek.com</a></td></tr>
+          <tr><td><strong>xAI Grok</strong></td><td>Free credits</td><td>Free credits on signup</td><td><a href="https://console.x.ai" target="_blank" rel="noopener">console.x.ai</a></td></tr>
         </tbody>
       </table>
-      <p class="onboarding-subtitle">Paid providers (OpenAI, Claude, Azure) are optional — only add them if free tiers aren't enough.</p>
+      <p class="onboarding-subtitle">OpenAI, Claude, and Azure are optional paid paths — skip until free options aren't enough.</p>
     </div>
-    <h3 class="howto-section-title" id="setup-keys">2 · All AI providers — pick a tab</h3>
-    <p class="onboarding-subtitle">Use the <strong>dropdown</strong> or <strong>tabs</strong> below — each provider has setup steps + <strong>PowerShell</strong> commands to install or test. Free until limits hit (Local is always free).</p>
-    <p class="onboarding-subtitle"><strong>First:</strong> connect the engine (section 1). Then save keys in the <strong>Credentials</strong> sidebar (AI tab for models; Webhooks / Auth / Email for integrations).</p>
+    <h3 class="howto-section-title" id="setup-keys">2 · Set up your chosen AI (step-by-step per provider)</h3>
+    <p class="onboarding-subtitle">Use the <strong>dropdown</strong> below. Each tab has: where to sign up → what to click in RoseOps → PowerShell to test.</p>
+    <p class="onboarding-subtitle"><strong>Where keys live:</strong> left sidebar <strong>Credentials</strong> → <strong>AI</strong> tab → quick-add or <strong>+ Add</strong>. Then pick that key in your <strong>AI Chat</strong> step.</p>
     ${buildAiProvidersTableHtml()}
     ${buildAiProviderTabsHtml(activeAiTab)}
-    <div class="howto-troubleshoot">
-      <p class="howto-checklist-title">If something fails</p>
-      <ul class="howto-troubleshoot-list">
-        <li><strong>Can't run workflows</strong> — engine offline. <code>npm start</code> → <code>localhost:3099</code></li>
-        <li><strong>Local / Ollama errors</strong> — run <code>ollama list</code> in PowerShell</li>
-        <li><strong>401 / invalid key</strong> — re-copy key from provider console; no extra spaces</li>
-        <li><strong>Azure / Copilot</strong> — model must match your <strong>deployment name</strong> exactly</li>
-      </ul>
-    </div>
-    <p class="onboarding-subtitle">Assistant: <code>opencode</code> · <code>gemini</code> · <code>deepseek</code> · <code>claude</code> · <code>grok</code> · <code>copilot</code> · <code>openai</code> · <code>ollama</code> · <code>keys</code></p>`;
+    ${buildSetupFirstRunHtml()}
+    ${buildSetupTroubleshootHtml()}
+    <p class="onboarding-subtitle">Assistant chat shortcuts: <code>connect</code> · <code>gemini</code> · <code>ollama</code> · <code>opencode</code> · <code>keys</code></p>`;
 }
 
 function bindSetupGuideAiButtons() {
@@ -607,6 +686,7 @@ function renderSetupDrawer() {
   const credCount = getActiveCredentials().length;
   els.setupDrawerBody.innerHTML = `
     ${status}
+    <p class="setup-path-label">New? Open <strong>Full guide</strong> for the 12-step checklist (engine → one AI → run).</p>
     <p class="setup-path-label">Free AI — pick one (Credentials sidebar):</p>
     <ul class="setup-ai-list">
       ${AI_PROVIDER_GUIDES.map((p) => `<li><strong>${p.roseopsBtn}</strong> <span class="ai-free-badge ai-free-badge-sm">${p.cost}</span></li>`).join("")}
@@ -645,7 +725,7 @@ function showSetupGuideModal(scrollTo = "") {
   if (scrollTo) {
     requestAnimationFrame(() => {
       activateAiProviderTab(activeAiTab);
-      const targetId = scrollTo === "engine" ? "setup-engine" : "setup-keys";
+      const targetId = scrollTo === "engine" ? "setup-start" : scrollTo === "first-run" ? "setup-first-run" : "setup-keys";
       document.getElementById(targetId)?.scrollIntoView({ block: "start", behavior: "smooth" });
     });
   }

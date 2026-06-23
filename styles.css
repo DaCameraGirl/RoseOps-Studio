@@ -436,6 +436,116 @@ button {
   vertical-align: middle;
 }
 
+.setup-start-here {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border: 2px solid rgba(237, 79, 143, 0.35);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(237, 79, 143, 0.08), rgba(124, 92, 255, 0.06));
+}
+
+.setup-start-eyebrow {
+  margin: 0 0 6px;
+  color: var(--rose);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.setup-start-lead {
+  margin: 0 0 12px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.setup-hour-steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.setup-hour-steps li + li {
+  margin-top: 10px;
+}
+
+.setup-hour-steps strong {
+  color: var(--ink);
+}
+
+.setup-success-note {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.45;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+}
+
+.setup-glossary {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel-soft);
+}
+
+.setup-glossary-list {
+  margin: 8px 0 0;
+  display: grid;
+  gap: 8px;
+}
+
+.setup-glossary-list dt {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.setup-glossary-list dd {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.setup-pages-callout {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(237, 79, 143, 0.3);
+  border-radius: var(--radius-sm);
+  background: rgba(237, 79, 143, 0.06);
+}
+
+.setup-alt-path {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.setup-alt-path summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.setup-alt-path p {
+  margin: 8px 0 0;
+}
+
+.setup-first-run-steps {
+  margin: 8px 0 12px;
+  padding-left: 1.2rem;
+}
+
 .setup-free-callout {
   margin: 12px 0 16px;
   padding: 12px 14px;
