@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RoseOps Studio — Enterprise Workflow Automation</title>
   <link rel="icon" href="assets/roseops-icon.ico" />
-  <link rel="stylesheet" href="styles.css?v=18" />
+  <link rel="stylesheet" href="styles.css?v=19" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&display=swap" rel="stylesheet" />
@@ -54,15 +54,20 @@
         <div class="template-list" id="templateList"></div>
       </section>
 
-      <section class="panel panel-keys">
+      <section class="panel panel-keys panel-credentials">
         <div class="panel-heading">
-          <h2>API keys</h2>
-          <button class="ghost-button add-workflow-btn" id="newCredential" title="Add a key">+ Add</button>
+          <h2>Credentials</h2>
+          <button class="ghost-button add-workflow-btn" id="newCredential" title="Add a credential">+ Add</button>
         </div>
-        <p class="panel-hint">Free until limits hit — <button type="button" class="guide-inline-link" id="keysSetupHelp">setup guide with tabs</button></p>
-        <div class="key-provider-pick">
-          <select id="keyProviderPick" class="key-provider-select" aria-label="Choose AI provider"></select>
-          <button type="button" class="ghost-button" id="keyProviderAdd">Add key</button>
+        <p class="panel-hint">Encrypted vault (n8n-style) — <button type="button" class="guide-inline-link" id="keysSetupHelp">free AI setup guide</button></p>
+        <div class="cred-category-tabs" id="credCategoryTabs" role="tablist" aria-label="Credential categories"></div>
+        <p class="cred-vault-count" id="credVaultCount" aria-live="polite"></p>
+        <div class="cred-vault-ai-quick" id="credVaultAiQuick">
+          <p class="cred-quick-label">Quick add — free AI</p>
+          <div class="key-provider-pick">
+            <select id="keyProviderPick" class="key-provider-select" aria-label="Choose AI provider"></select>
+            <button type="button" class="ghost-button" id="keyProviderAdd">Add</button>
+          </div>
         </div>
         <div class="template-list" id="credentialList"></div>
       </section>
@@ -204,6 +209,6 @@
 
   <div id="toastHost" class="toast-host" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=19"></script>
 </body>
 </html>

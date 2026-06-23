@@ -345,8 +345,109 @@ button {
   transform: translateY(-1px);
 }
 
-.panel-keys {
+.panel-keys,
+.panel-credentials {
   border-color: rgba(124, 92, 255, 0.25);
+}
+
+.cred-category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.cred-category-tab {
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--panel);
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+}
+
+.cred-category-tab:hover {
+  border-color: var(--rose);
+  color: var(--ink);
+}
+
+.cred-category-tab.active {
+  border-color: rgba(124, 92, 255, 0.5);
+  color: var(--ink);
+  background: rgba(124, 92, 255, 0.12);
+}
+
+.cred-cat-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  border-radius: 999px;
+  padding: 0 4px;
+  background: rgba(124, 92, 255, 0.2);
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.cred-vault-count {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.cred-vault-ai-quick {
+  margin-bottom: 10px;
+}
+
+.cred-vault-ai-quick.hidden {
+  display: none;
+}
+
+.cred-quick-label {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cred-type-badge {
+  display: inline-block;
+  margin-left: 4px;
+  border-radius: 4px;
+  padding: 1px 5px;
+  background: rgba(124, 92, 255, 0.15);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.setup-free-callout {
+  margin: 12px 0 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(124, 92, 255, 0.25);
+  border-radius: var(--radius-sm);
+  background: rgba(124, 92, 255, 0.06);
+}
+
+.howto-table-compact td,
+.howto-table-compact th {
+  padding: 6px 8px;
+  font-size: 11px;
 }
 
 .palette-section-label {
