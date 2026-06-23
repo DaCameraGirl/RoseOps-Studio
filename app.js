@@ -52,7 +52,8 @@ let WORKFLOW_TEMPLATES = [];
 
 const ONBOARDING_KEY = "roseops_onboarded";
 const STARTERS_SEED_KEY = "roseops_starters_seeded";
-const ONBOARDING_STEPS = 3;
+const GUIDE_DISMISS_KEY = "roseops_guide_dismissed";
+const ONBOARDING_STEPS = 2;
 
 let localDb = JSON.parse(localStorage.getItem("roseops_workflows") || "[]");
 let currentWorkflowId = null;
@@ -72,7 +73,7 @@ let lastConnectedPair = null;
 
 const els = {};
 function initEls() {
-  const ids = ["templateList","blockPalette","flowTitle","nodeCount","board","nodes","connections","inspectorEmpty","inspectorForm","nodeName","nodeChannel","nodeNotes","nodePriority","nodeMode","deleteNode","resetFlow","autoArrange","runFlow","runLog","runState","chatForm","chatInput","chatLog","workflowList","newWorkflow","nodeConfig","browseTemplates","onboarding","onboardingContent","onboardingProgress","credentialList","newCredential","modal","modalTitle","modalBody","connectionStatus","workflowVersion","nodeCountMeta"];
+  const ids = ["templateList","blockPalette","flowTitle","nodeCount","board","nodes","connections","inspectorEmpty","inspectorForm","nodeName","nodeChannel","nodeNotes","nodePriority","nodeMode","deleteNode","resetFlow","autoArrange","runFlow","runLog","runState","chatForm","chatInput","chatLog","workflowList","newWorkflow","nodeConfig","browseTemplates","onboarding","onboardingContent","onboardingProgress","credentialList","newCredential","modal","modalTitle","modalBody","connectionStatus","workflowVersion","nodeCountMeta","canvasEmpty","canvasPickStarter","guidePanel","guideSteps","dismissGuide"];
   ids.forEach(id => els[id] = document.querySelector("#" + id));
 }
 
@@ -104,6 +105,13 @@ async function init() {
       els.templateList?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });
   }
+  if (els.canvasPickStarter) els.canvasPickStarter.addEventListener("click", () => showWorkflowPickerModal());
+  if (els.dismissGuide) {
+    els.dismissGuide.addEventListener("click", () => {
+      try { localStorage.setItem(GUIDE_DISMISS_KEY, "1"); } catch {}
+      els.guidePanel?.classList.add("hidden");
+    });
+  }
   setupPaletteDropZone();
 
   await connectToServer();
@@ -114,7 +122,12 @@ async function init() {
   await ensureStarterWorkflowsExist();
   await loadWorkflowList();
   if (connected) setupSSE();
+  updateGuidePanel();
   if (!localStorage.getItem(ONBOARDING_KEY)) showOnboarding();
+  else if (!sessionStorage.getItem("roseops_welcomed")) {
+    showToast("Drag steps onto the canvas, connect the dots, then hit Run workflow.");
+    sessionStorage.setItem("roseops_welcomed", "1");
+  }
 }
 
 async function connectToServer() {
@@ -133,12 +146,12 @@ async function connectToServer() {
     const serverTypes = await typesRes.json();
     if (serverTypes?.length) blockTypes = serverTypes;
     els.connectionStatus.textContent = `● ${health.version || "enterprise"}`;
-    addChatMessage("bot", "Connected to RoseOps Enterprise engine.");
+    addChatMessage("bot", "You're connected! Pick a workflow on the left to get started.");
   } catch (err) {
     connected = false;
     els.connectionStatus.textContent = "● offline";
     if (String(err.message).includes("Unauthorized") && !apiKey) promptApiKey();
-    addChatMessage("bot", "Server unavailable — start with npm start. Execution requires the engine.");
+    addChatMessage("bot", "Engine offline — run npm start for full features. You can still browse templates and build flows.");
   }
 }
 
@@ -222,8 +235,12 @@ function setupSSE() {
         if (data.status === "error" && data.error) {
           const e = document.createElement("li");
           e.className = "error"; e.textContent = friendlyError(data.error); els.runLog.appendChild(e);
+        } else if (data.status === "success") {
+          showToast("Workflow finished successfully!", "success");
         }
-        renderFlow(); break;
+        renderFlow();
+        updateGuidePanel();
+        break;
     }
   };
 }
@@ -278,7 +295,7 @@ async function loadWorkflowList() {
   if (!workflows.length) {
     const empty = document.createElement("div");
     empty.className = "workflow-empty";
-    empty.innerHTML = `<p>No workflows yet.</p><button type="button" class="primary-button" id="pickStarterBtn">Pick a starter workflow</button>`;
+    empty.innerHTML = `<p>No workflows yet — let's fix that.</p><button type="button" class="primary-button" id="pickStarterBtn">Browse templates</button>`;
     els.workflowList.appendChild(empty);
     empty.querySelector("#pickStarterBtn").addEventListener("click", () => showWorkflowPickerModal());
     return;
@@ -290,7 +307,7 @@ async function loadWorkflowList() {
     const icon = starter?.icon || (wf.name || "?").slice(0, 2).toUpperCase();
     const btn = document.createElement("button");
     btn.className = `template-card${wf.id === currentWorkflowId ? " active" : ""}`;
-    btn.innerHTML = `<span class="tile-icon" style="background:${color}">${icon}</span><span><strong>${escapeHtml(wf.name)}</strong><span>${escapeHtml(wf.description || "")}</span>${starter?.badge ? `<span class="template-badge">${escapeHtml(starter.badge)}</span>` : ""}</span>`;
+    btn.innerHTML = `<span class="tile-icon" style="background:${color}">${icon}</span><span><strong>${escapeHtml(wf.name)}</strong><span>${escapeHtml(wf.description || "")}</span>${starter?.badge ? `<span class="template-badge">${escapeHtml(starter.badge)}</span>` : ""}<span class="card-cta">Tap to open →</span></span>`;
     btn.addEventListener("click", () => loadWorkflow(wf.id));
     els.workflowList.appendChild(btn);
   }
@@ -298,14 +315,22 @@ async function loadWorkflowList() {
 }
 
 async function loadCredentials() {
-  if (!connected || !els.credentialList) return;
+  if (!els.credentialList) return;
+  if (!connected) {
+    els.credentialList.innerHTML = `<div class="workflow-empty"><p>Secrets vault needs the engine running — use <strong>npm start</strong> locally.</p></div>`;
+    return;
+  }
   try {
     credentialList = await (await apiFetch("/api/credentials")).json();
     els.credentialList.innerHTML = "";
+    if (!credentialList.length) {
+      els.credentialList.innerHTML = `<div class="workflow-empty"><p>No secrets saved yet. Add one when a step needs an API key or password.</p></div>`;
+      return;
+    }
     credentialList.forEach((cred) => {
       const btn = document.createElement("button");
       btn.className = "template-card";
-      btn.innerHTML = `<span class="tile-icon" style="background:#9b8ec4">${cred.type.slice(0, 2).toUpperCase()}</span><span><strong>${escapeHtml(cred.name)}</strong><span>${escapeHtml(cred.type)}</span></span>`;
+      btn.innerHTML = `<span class="tile-icon" style="background:#9b8ec4">${cred.type.slice(0, 2).toUpperCase()}</span><span><strong>${escapeHtml(cred.name)}</strong><span>${escapeHtml(cred.type)}</span><span class="card-cta">Tap to view →</span></span>`;
       btn.addEventListener("click", () => showCredentialDetail(cred.id));
       els.credentialList.appendChild(btn);
     });
@@ -329,6 +354,7 @@ async function createWorkflow(name, description) {
   }
   currentWorkflowId = id; nodes = []; connections = []; selectedNodeId = null; executionResults = {}; webhookInfo = null;
   els.flowTitle.textContent = name; clearRun(); renderFlow(); await loadWorkflowList();
+  showToast(`"${name}" created — drag your first step in.`, "success");
 }
 
 async function loadWorkflow(id) {
@@ -344,6 +370,7 @@ async function loadWorkflow(id) {
   els.flowTitle.textContent = wf.name || "Untitled";
   els.workflowVersion.textContent = `v${workflowVersion}`;
   clearRun(); renderFlow(); await loadWorkflowList();
+  updateGuidePanel();
   webhookInfo = null;
   if (connected) {
     try { const wh = await (await apiFetch(`/api/webhooks/${id}`)).json(); if (wh) webhookInfo = wh; } catch {}
@@ -388,7 +415,7 @@ function renderTemplates() {
   WORKFLOW_TEMPLATES.forEach((tpl) => {
     const btn = document.createElement("button");
     btn.className = "template-card";
-    btn.innerHTML = `<span class="tile-icon" style="background:${tpl.color}">${tpl.icon}</span><span><strong>${escapeHtml(tpl.name)}</strong><span>${escapeHtml(tpl.description)}</span>${tpl.badge ? `<span class="template-badge">${escapeHtml(tpl.badge)}</span>` : ""}</span>`;
+    btn.innerHTML = `<span class="tile-icon" style="background:${tpl.color}">${tpl.icon}</span><span><strong>${escapeHtml(tpl.name)}</strong><span>${escapeHtml(tpl.description)}</span>${tpl.badge ? `<span class="template-badge">${escapeHtml(tpl.badge)}</span>` : ""}<span class="card-cta">Tap to add →</span></span>`;
     btn.addEventListener("click", () => cloneTemplate(tpl));
     els.templateList.appendChild(btn);
   });
@@ -439,7 +466,10 @@ async function cloneTemplate(template, opts = {}) {
   if (!opts.skipArrange) autoArrange();
   renderFlow();
   await loadWorkflowList();
-  if (!opts.silent) addChatMessage("bot", `Deployed "${name}" — configure credentials and endpoints before execution.`);
+  if (!opts.silent) {
+    showToast(`"${name}" added — tap each step to configure it.`, "success");
+    addChatMessage("bot", `"${name}" is ready. Tap each step to set it up, then hit Run workflow.`);
+  }
   return id;
 }
 
@@ -459,7 +489,7 @@ async function createGuidedWorkflow() {
 
 function renderFlow() {
   els.nodes.innerHTML = "";
-  const countLabel = `${nodes.length} ${nodes.length === 1 ? "node" : "nodes"}`;
+  const countLabel = `${nodes.length} ${nodes.length === 1 ? "step" : "steps"}`;
   els.nodeCount.textContent = countLabel;
   if (els.nodeCountMeta) els.nodeCountMeta.textContent = countLabel;
 
@@ -498,6 +528,8 @@ function renderFlow() {
 
   renderConnections();
   renderInspector();
+  renderCanvasEmpty();
+  updateGuidePanel();
   if (spawnNodeId) {
     setTimeout(() => { spawnNodeId = null; }, 450);
   }
@@ -680,6 +712,7 @@ function addBlock(type, opts = {}) {
   clearRun();
   renderFlow();
   saveWorkflow();
+  if (nodes.length === 1) showToast("First step added — drag more from the left or connect the dots.", "success");
   return added;
 }
 
@@ -925,12 +958,12 @@ function showWorkflowPickerModal() {
     ? WORKFLOW_TEMPLATES.map((tpl) => `
     <button type="button" class="picker-card" data-starter-id="${tpl.id}">
       <span class="tile-icon" style="background:${tpl.color}">${tpl.icon}</span>
-      <span><strong>${escapeHtml(tpl.name)}</strong><span>${escapeHtml(tpl.description)}</span>${tpl.badge ? `<span class="template-badge">${escapeHtml(tpl.badge)}</span>` : ""}</span>
+      <span><strong>${escapeHtml(tpl.name)}</strong><span>${escapeHtml(tpl.description)}</span>${tpl.badge ? `<span class="template-badge">${escapeHtml(tpl.badge)}</span>` : ""}<span class="card-cta">Tap to add →</span></span>
     </button>`).join("")
     : `<p class="onboarding-subtitle">Starters didn't load — refresh the page or check your API connection.</p>`;
 
-  showModal("Pick a Workflow", `
-    <p class="onboarding-subtitle">Choose a starter to add to your library, or start blank.</p>
+  showModal("Add a workflow", `
+    <p class="onboarding-subtitle">Tap a template to add it, or start with a blank canvas below.</p>
     <div class="picker-grid">${starterCards}</div>
     <div class="picker-divider"><span>or</span></div>
     <form id="blankWorkflowForm" class="credential-form-grid">
@@ -938,7 +971,7 @@ function showWorkflowPickerModal() {
       <label>Description<textarea id="wfDesc" rows="2" placeholder="Optional"></textarea></label>
       <div class="modal-actions">
         <button type="button" class="ghost-button" data-close-modal>Cancel</button>
-        <button type="submit" class="ghost-button">Empty canvas</button>
+        <button type="submit" class="primary-button">Start blank</button>
       </div>
     </form>`);
 
@@ -1101,17 +1134,18 @@ async function handleOnboardingAction(action, btn) {
   try {
     if (action === "guided") {
       await createGuidedWorkflow();
+      showToast("API pipeline loaded — tap each step to set it up.", "success");
     } else if (action === "template") {
       showWorkflowPickerModal();
-      addChatMessage("bot", "Pick an operations starter from the library.");
+      showToast("Pick a template — they’re ready to use.", "info");
     } else if (action === "scratch") {
       await createWorkflow("Untitled", "");
-      addChatMessage("bot", "Empty workflow ready — drag nodes from the palette to build.");
+      showToast("Blank canvas ready — drag your first step in.", "success");
     } else if (action === "skip") {
-      addChatMessage("bot", "You're in. Hit + anytime to pick a starter.");
+      showToast("Check Getting started on the right for your next steps.", "info");
     }
   } catch (err) {
-    addChatMessage("bot", err?.message || "Setup hit a snag — use + to pick a starter.");
+    showToast(err?.message || "Something went wrong — try Browse templates.", "info");
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -1136,45 +1170,36 @@ function renderOnboardingStep() {
     content.innerHTML = `
       <div class="onboarding-hero">
         <div class="onboarding-hero-mark">✿</div>
-        <h2 class="onboarding-title" id="onboardingTitle">RoseOps Enterprise</h2>
-        <p class="onboarding-subtitle">Production workflow automation with encrypted credentials, audit logging, versioned workflows, and signed webhooks.</p>
-      </div>
-      <div class="onboarding-actions">
-        <button type="button" class="primary-button" data-action="next">Continue →</button>
-      </div>`;
-  } else if (onboardingStep === 1) {
-    content.innerHTML = `
-      <div class="onboarding-hero">
-        <h2 class="onboarding-title" id="onboardingTitle">Operations model</h2>
-        <p class="onboarding-subtitle">Designed for production teams running audited, credential-backed automations.</p>
+        <h2 class="onboarding-title" id="onboardingTitle">Welcome to RoseOps</h2>
+        <p class="onboarding-subtitle">Build automations visually — drag, connect, and run. No coding required to get started.</p>
       </div>
       <div class="onboarding-steps">
-        <div class="onboarding-step"><span class="onboarding-step-num">1</span><span><strong>Vault credentials</strong><span>Store API keys, tokens, and SMTP config encrypted — never in node plaintext.</span></span></div>
-        <div class="onboarding-step"><span class="onboarding-step-num">2</span><span><strong>Build validated DAGs</strong><span>Compose nodes, connect handles. Cycles and invalid config are rejected at save.</span></span></div>
-        <div class="onboarding-step"><span class="onboarding-step-num">3</span><span><strong>Execute with audit trail</strong><span>Queued execution, retries, per-node telemetry, full audit log.</span></span></div>
+        <div class="onboarding-step"><span class="onboarding-step-num">1</span><span><strong>Pick a workflow</strong><span>Start from a template or blank canvas.</span></span></div>
+        <div class="onboarding-step"><span class="onboarding-step-num">2</span><span><strong>Add &amp; connect steps</strong><span>Drag steps onto the canvas and link them together.</span></span></div>
+        <div class="onboarding-step"><span class="onboarding-step-num">3</span><span><strong>Run it</strong><span>Hit Run workflow when you're ready.</span></span></div>
       </div>
       <div class="onboarding-actions">
-        <button type="button" class="ghost-button" data-action="back">Back</button>
-        <button type="button" class="primary-button" data-action="next">Got it →</button>
+        <button type="button" class="primary-button" data-action="next">Let's go →</button>
       </div>`;
   } else {
     content.innerHTML = `
       <div class="onboarding-hero">
-        <h2 class="onboarding-title" id="onboardingTitle">Deployment path</h2>
-        <p class="onboarding-subtitle">Select your initial workspace configuration.</p>
+        <h2 class="onboarding-title" id="onboardingTitle">How do you want to start?</h2>
+        <p class="onboarding-subtitle">Tap one of these — you can always add more later.</p>
       </div>
+      <p class="onboarding-choice-hint">👇 Click to choose</p>
       <div class="onboarding-choices">
         <button type="button" class="onboarding-choice" data-action="guided">
           <span class="onboarding-choice-icon">✦</span>
-          <span><strong>Standard API pipeline</strong><span>Production template with ingest, transform, and credential slots.</span></span>
+          <span><strong>API pipeline</strong><span>Fetch data, transform it, and send it somewhere.</span><span class="onboarding-choice-cta">Start with this →</span></span>
         </button>
         <button type="button" class="onboarding-choice" data-action="template">
           <span class="onboarding-choice-icon">◇</span>
-          <span><strong>Operations templates</strong><span>Incident notify, compliance watch, audit logging — clone and configure.</span></span>
+          <span><strong>Browse templates</strong><span>Discord alerts, health checks, audit logs, and more.</span><span class="onboarding-choice-cta">Start with this →</span></span>
         </button>
         <button type="button" class="onboarding-choice" data-action="scratch">
           <span class="onboarding-choice-icon">+</span>
-          <span><strong>Empty workflow</strong><span>Start from a validated blank workflow.</span></span>
+          <span><strong>Blank canvas</strong><span>Start from scratch and build your own flow.</span><span class="onboarding-choice-cta">Start with this →</span></span>
         </button>
       </div>
       <div class="onboarding-actions">
@@ -1249,6 +1274,51 @@ function endPaletteDrag(event) {
 
 function setupPaletteDropZone() {
   els.board.addEventListener("dragover", (e) => e.preventDefault());
+}
+
+// ===== UX helpers =====
+function showToast(message, type = "info") {
+  const host = document.getElementById("toastHost");
+  if (!host) return;
+  const t = document.createElement("div");
+  t.className = `toast toast-${type}`;
+  t.textContent = message;
+  host.appendChild(t);
+  requestAnimationFrame(() => t.classList.add("visible"));
+  setTimeout(() => {
+    t.classList.remove("visible");
+    setTimeout(() => t.remove(), 280);
+  }, 4200);
+}
+
+function updateGuidePanel() {
+  if (!els.guidePanel) return;
+  if (localStorage.getItem(GUIDE_DISMISS_KEY)) {
+    els.guidePanel.classList.add("hidden");
+    return;
+  }
+  els.guidePanel.classList.remove("hidden");
+  const progress = {
+    workflow: !!currentWorkflowId,
+    nodes: nodes.length > 0,
+    connect: connections.length > 0,
+    run: els.runState?.textContent === "Complete",
+  };
+  let activeSet = false;
+  els.guideSteps?.querySelectorAll(".guide-step").forEach((li, i) => {
+    const done = !!progress[li.dataset.step];
+    li.classList.toggle("done", done);
+    const isActive = !done && !activeSet;
+    li.classList.toggle("active", isActive);
+    if (isActive) activeSet = true;
+    const check = li.querySelector(".guide-check");
+    if (check) check.textContent = done ? "✓" : String(i + 1);
+  });
+}
+
+function renderCanvasEmpty() {
+  if (!els.canvasEmpty) return;
+  els.canvasEmpty.classList.toggle("hidden", !(nodes.length === 0 && currentWorkflowId));
 }
 
 // ===== Friendly errors =====
