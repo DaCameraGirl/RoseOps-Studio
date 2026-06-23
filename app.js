@@ -38,6 +38,7 @@ const CREDENTIAL_PRESETS = {
   anthropic_api: { label: "Anthropic Claude", name: "My Claude Key", hint: "Trial/free tier — then paid. Key at console.anthropic.com" },
   azure_openai: { label: "Microsoft Copilot (Azure)", name: "My Azure OpenAI", hint: "Azure free credits for new accounts. Endpoint + key from portal.azure.com" },
   ollama_local: { label: "Ollama (local)", name: "My PC — Ollama", hint: "Always free on your computer — PowerShell steps in Setup guide" },
+  opencode_zen: { label: "OpenCode Zen", name: "My OpenCode Zen Key", hint: "Lots of free LLMs — key at opencode.ai/auth" },
 };
 
 const AI_PROVIDER_GUIDES = [
@@ -56,6 +57,33 @@ const AI_PROVIDER_GUIDES = [
     inRoseOps: "API keys → Local → Save (default URL)",
     inWorkflow: "AI Chat → provider ollama → model llama3.2",
     psSnippet: "__LOCAL_PS__",
+  },
+  {
+    id: "opencode",
+    label: "OpenCode Zen",
+    cost: "Free models",
+    costDetail: "75+ providers via OpenCode — several models completely free on Zen (DeepSeek Flash Free, MiMo, Big Pickle, Nemotron…)",
+    signupUrl: "https://opencode.ai/auth",
+    signupText: "opencode.ai/auth",
+    preset: "opencode_zen",
+    provider: "opencode",
+    model: "deepseek-v4-flash-free",
+    roseopsBtn: "OpenCode",
+    getKey: ["Sign in at opencode.ai/auth", "Copy Zen API key", "Optional: install OpenCode CLI for terminal use"],
+    inRoseOps: "API keys → OpenCode → paste Zen key → Save",
+    inWorkflow: "AI Chat → provider opencode → model deepseek-v4-flash-free (or any Zen free model)",
+    psSnippet: `# Install OpenCode in PowerShell (optional CLI — pick one):
+npm i -g opencode-ai@latest
+# scoop install opencode
+# choco install opencode
+
+# Get your FREE Zen API key: https://opencode.ai/auth
+# List models: https://opencode.ai/zen/v1/models
+
+# Test a FREE model (replace YOUR_ZEN_KEY):
+$headers = @{ Authorization = "Bearer YOUR_ZEN_KEY"; "Content-Type" = "application/json" }
+$body = '{"model":"deepseek-v4-flash-free","messages":[{"role":"user","content":"Hello"}]}'
+Invoke-RestMethod -Uri "https://opencode.ai/zen/v1/chat/completions" -Method Post -Headers $headers -Body $body`,
   },
   {
     id: "gemini",
@@ -185,7 +213,7 @@ Invoke-RestMethod -Uri "https://api.openai.com/v1/chat/completions" -Method Post
 let localCredentialList = [];
 let blockTypes = [
   { type: "trigger", name: "Trigger", icon: "\u2726", color: "#e8739a", config: [{ key: "triggerType", label: "Type", type: "select", options: ["Manual", "Webhook", "Schedule"], default: "Manual" }], defaults: { channel: "Manual", priority: "Normal", mode: "Auto" } },
-  { type: "llm", name: "AI Chat", icon: "AI", color: "#7c5cff", config: [{ key: "provider", label: "Provider", type: "select", options: ["openai", "google", "deepseek", "xai", "anthropic", "azure", "ollama"], default: "openai" }, { key: "credentialId", label: "API Key", type: "credential", credentialTypes: ["openai_api", "google_gemini", "deepseek_api", "xai_grok", "anthropic_api", "azure_openai", "ollama_local", "bearer_token"], default: "" }, { key: "model", label: "Model", type: "string", default: "gpt-4o-mini" }, { key: "systemPrompt", label: "System prompt", type: "code", default: "You are a helpful assistant." }, { key: "userPrompt", label: "User prompt", type: "code", default: "{{message}}" }, { key: "temperature", label: "Temperature", type: "number", default: 0.7 }], defaults: { channel: "LLM", priority: "Normal", mode: "Auto" } },
+  { type: "llm", name: "AI Chat", icon: "AI", color: "#7c5cff", config: [{ key: "provider", label: "Provider", type: "select", options: ["openai", "google", "deepseek", "xai", "anthropic", "azure", "opencode", "ollama"], default: "openai" }, { key: "credentialId", label: "API Key", type: "credential", credentialTypes: ["openai_api", "google_gemini", "deepseek_api", "xai_grok", "anthropic_api", "azure_openai", "opencode_zen", "ollama_local", "bearer_token"], default: "" }, { key: "model", label: "Model", type: "string", default: "gpt-4o-mini" }, { key: "systemPrompt", label: "System prompt", type: "code", default: "You are a helpful assistant." }, { key: "userPrompt", label: "User prompt", type: "code", default: "{{message}}" }, { key: "temperature", label: "Temperature", type: "number", default: 0.7 }], defaults: { channel: "LLM", priority: "Normal", mode: "Auto" } },
   { type: "http", name: "HTTP Request", icon: "HTTP", color: "#b8a9d4", config: [{ key: "url", label: "URL", type: "string", default: "https://api.example.com" }, { key: "method", label: "Method", type: "select", options: ["GET", "POST", "PUT", "PATCH", "DELETE"], default: "GET" }, { key: "headers", label: "Headers", type: "code", default: "{}" }, { key: "body", label: "Body", type: "code", default: "{}" }], defaults: { channel: "API", priority: "Normal", mode: "Auto" } },
   { type: "code", name: "Code", icon: "</>", color: "#a8d8c8", config: [{ key: "code", label: "JavaScript", type: "code", default: "return { result: data };" }], defaults: { channel: "JS", priority: "Normal", mode: "Auto" } },
   { type: "delay", name: "Delay", icon: "WAIT", color: "#e8c87a", config: [{ key: "duration", label: "ms", type: "number", default: 1000 }], defaults: { channel: "Timer", priority: "Low", mode: "Auto" } },
@@ -521,7 +549,7 @@ function getSetupGuideBodyHtml(activeAiTab = "local") {
         <li><strong>Azure / Copilot</strong> — model must match your <strong>deployment name</strong> exactly</li>
       </ul>
     </div>
-    <p class="onboarding-subtitle">Assistant: <code>gemini</code> · <code>deepseek</code> · <code>claude</code> · <code>grok</code> · <code>copilot</code> · <code>openai</code> · <code>ollama</code> · <code>keys</code></p>`;
+    <p class="onboarding-subtitle">Assistant: <code>opencode</code> · <code>gemini</code> · <code>deepseek</code> · <code>claude</code> · <code>grok</code> · <code>copilot</code> · <code>openai</code> · <code>ollama</code> · <code>keys</code></p>`;
 }
 
 function bindSetupGuideAiButtons() {
@@ -1227,7 +1255,7 @@ function renderInspector() {
     });
     els.nodeConfig.querySelectorAll(".cred-inline-add").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const provider = selected.type === "llm" ? { openai: "openai_api", google: "google_gemini", deepseek: "deepseek_api", xai: "xai_grok", anthropic: "anthropic_api", azure: "azure_openai", ollama: "ollama_local" }[selected.config?.provider] || "openai_api" : "api_key";
+        const provider = selected.type === "llm" ? { openai: "openai_api", google: "google_gemini", deepseek: "deepseek_api", xai: "xai_grok", anthropic: "anthropic_api", azure: "azure_openai", opencode: "opencode_zen", ollama: "ollama_local" }[selected.config?.provider] || "openai_api" : "api_key";
         showQuickCredentialModal(provider);
       });
     });
@@ -1537,9 +1565,12 @@ function handleChatCommand(raw) {
     if (match) { addBlock(match.type); addChatMessage("bot", `Added ${match.name}.`); }
     else { addChatMessage("bot", `Unknown. Try: add http / add code / add delay / add webhook / add schedule / add email`); }
   } else if (lower === "help" || lower === "?") {
-    addChatMessage("bot", "Commands: run · connect · gemini · deepseek · claude · grok · copilot · openai · ollama · keys · help");
+    addChatMessage("bot", "Commands: run · connect · opencode · gemini · deepseek · claude · grok · copilot · openai · ollama · keys · help");
   } else if (lower === "connect" || lower === "engine" || lower === "setup") {
     showSetupGuideModal("engine");
+  } else if (lower === "opencode" || lower === "zen") {
+    showSetupGuideModal("opencode");
+    showQuickCredentialModal("opencode_zen");
   } else if (lower === "gemini" || lower === "google") {
     showSetupGuideModal("gemini");
     showQuickCredentialModal("google_gemini");
@@ -1632,6 +1663,7 @@ function credentialFieldsForType(type) {
     deepseek_api: apiKeyField,
     xai_grok: apiKeyField,
     anthropic_api: apiKeyField,
+    opencode_zen: `<p class="onboarding-subtitle">Free models on <a href="https://opencode.ai/zen" target="_blank" rel="noopener">OpenCode Zen</a> — try <code>deepseek-v4-flash-free</code>, <code>mimo-v2.5-free</code>, <code>big-pickle</code>. Key at <a href="https://opencode.ai/auth" target="_blank" rel="noopener">opencode.ai/auth</a>.</p>${apiKeyField}`,
     azure_openai: `<label>Azure endpoint<input type="url" id="credAzureEndpoint" placeholder="https://your-resource.openai.azure.com" required /></label>
       <label>Deployment name<input id="credAzureDeployment" value="gpt-4o-mini" required autocomplete="off" /></label>
       <label>API key<input type="password" id="credApiKey" required autocomplete="off" /></label>
@@ -1657,7 +1689,8 @@ function collectCredentialData(type) {
     case "google_gemini":
     case "deepseek_api":
     case "xai_grok":
-    case "anthropic_api": return { apiKey: document.getElementById("credApiKey").value.trim() };
+    case "anthropic_api":
+    case "opencode_zen": return { apiKey: document.getElementById("credApiKey").value.trim() };
     case "azure_openai": return {
       endpoint: document.getElementById("credAzureEndpoint").value.trim().replace(/\/$/, ""),
       deployment: document.getElementById("credAzureDeployment").value.trim(),
@@ -1739,6 +1772,7 @@ function showNewCredentialModal() {
           <option value="xai_grok">xAI Grok</option>
           <option value="anthropic_api">Anthropic Claude</option>
           <option value="azure_openai">Microsoft Copilot (Azure)</option>
+          <option value="opencode_zen">OpenCode Zen (free models)</option>
           <option value="ollama_local">Ollama (local, free)</option>
         </optgroup>
         <optgroup label="Integrations">
