@@ -59,7 +59,7 @@ Open **http://localhost:3099** — UI + execution engine together.
 ### GitHub Pages (UI preview only)
 
 **[dacameragirl.github.io/RoseOps-Studio](https://dacameragirl.github.io/RoseOps-Studio/)** hosts the studio UI for browsing and building flows.  
-**Running workflows requires the engine** — visitors see an in-app **How to connect** guide automatically.
+**Running workflows requires the engine** — the live site includes a full **Setup guide** (sidebar, top bar, and Getting started panel) with engine + Grok/API key steps. README mirrors that for GitHub visitors.
 
 | Who | What to do |
 |-----|------------|

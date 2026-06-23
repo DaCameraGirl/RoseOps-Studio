@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RoseOps Studio — Enterprise Workflow Automation</title>
   <link rel="icon" href="assets/roseops-icon.ico" />
-  <link rel="stylesheet" href="styles.css?v=12" />
+  <link rel="stylesheet" href="styles.css?v=13" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&display=swap" rel="stylesheet" />
@@ -27,6 +27,14 @@
           <p>automation with grace</p>
         </div>
       </div>
+
+      <details class="panel setup-drawer" id="setupDrawer" open>
+        <summary class="setup-drawer-summary">
+          <span>Setup guide</span>
+          <span class="panel-hint">on this page</span>
+        </summary>
+        <div id="setupDrawerBody" class="setup-drawer-body"></div>
+      </details>
 
       <section class="panel panel-workflows">
         <div class="panel-heading">
@@ -85,6 +93,7 @@
           </div>
         </div>
         <div class="topbar-actions">
+          <button class="ghost-button" id="openSetupGuide" title="Engine, Grok keys, and quick start">Setup guide</button>
           <button class="ghost-button" id="fitView">Show all steps</button>
           <button class="ghost-button" id="autoArrange">Tidy up layout</button>
           <button class="primary-button" id="runFlow"><span aria-hidden="true">&#x25B6;</span> Run workflow</button>
@@ -121,11 +130,14 @@
           <button type="button" class="icon-button" id="dismissGuide" title="Hide guide">&#215;</button>
         </div>
         <ol class="guide-steps" id="guideSteps">
-          <li class="guide-step" data-step="workflow"><span class="guide-check">1</span> Pick a workflow on the left</li>
-          <li class="guide-step" data-step="nodes"><span class="guide-check">2</span> Drag steps onto the canvas</li>
-          <li class="guide-step" data-step="connect"><span class="guide-check">3</span> Connect the dots between steps</li>
-          <li class="guide-step" data-step="run"><span class="guide-check">4</span> Hit <strong>Run workflow</strong></li>
+          <li class="guide-step guide-step-engine hidden" data-step="engine"><span class="guide-check">1</span> <button type="button" class="guide-inline-link" data-guide-action="engine">Connect the engine</button> — required to run workflows</li>
+          <li class="guide-step" data-step="workflow"><span class="guide-check">2</span> Pick a workflow on the left</li>
+          <li class="guide-step" data-step="keys"><span class="guide-check">3</span> <button type="button" class="guide-inline-link" data-guide-action="grok">Add API keys</button> (Grok, OpenAI, Gemini…)</li>
+          <li class="guide-step" data-step="nodes"><span class="guide-check">4</span> Drag steps onto the canvas</li>
+          <li class="guide-step" data-step="connect"><span class="guide-check">5</span> Connect the dots between steps</li>
+          <li class="guide-step" data-step="run"><span class="guide-check">6</span> Hit <strong>Run workflow</strong></li>
         </ol>
+        <button type="button" class="ghost-button setup-guide-cta" id="openSetupGuideSide">Open full setup guide</button>
       </section>
 
       <section class="panel inspector-card">
@@ -166,7 +178,7 @@
         </div>
         <div id="chatLog" class="chat-log"></div>
         <form id="chatForm" class="chat-form" autocomplete="off">
-          <input id="chatInput" type="text" placeholder="Try: help, run, add email" />
+          <input id="chatInput" type="text" placeholder="Try: connect, grok, help" />
           <button type="submit" class="chat-send-btn" aria-label="Send">&#8593;</button>
         </form>
       </section>
@@ -194,6 +206,6 @@
 
   <div id="toastHost" class="toast-host" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="app.js?v=12"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>
