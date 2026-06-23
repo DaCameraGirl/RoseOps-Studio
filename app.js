@@ -153,7 +153,7 @@ async function connectToServer() {
     connected = false;
     els.connectionStatus.textContent = "● pages (static)";
     showPagesDeployBanner();
-    addChatMessage("bot", "GitHub Pages serves the UI only. Deploy the Node engine (server.js) to Render/Railway, then set your API URL.");
+    addChatMessage("bot", "You're on GitHub Pages (preview). Double-click the RoseOps desktop icon for the full app, or hit Connect engine → I started RoseOps from my desktop icon.");
     return;
   }
   try {
@@ -184,22 +184,50 @@ function showPagesDeployBanner() {
     <button type="button" class="icon-button" id="dismissPagesBanner" aria-label="Dismiss">&#215;</button>`;
   document.querySelector(".workspace")?.prepend(banner);
   banner.querySelector("#dismissPagesBanner")?.addEventListener("click", () => banner.remove());
-  banner.querySelector("#setApiUrl").addEventListener("click", () => {
-    showModal("Connect Enterprise Engine", `
-      <p class="onboarding-subtitle">Enter the URL where you deployed <code>server.js</code> (e.g. https://roseops-api.onrender.com)</p>
-      <form id="apiUrlForm" class="credential-form-grid">
-        <label>Engine URL<input id="apiUrlInput" type="url" placeholder="https://your-api.example.com" required /></label>
-        <div class="modal-actions">
-          <button type="submit" class="primary-button">Connect</button>
-        </div>
-      </form>`);
-    document.getElementById("apiUrlForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const url = document.getElementById("apiUrlInput").value.trim().replace(/\/$/, "");
-      sessionStorage.setItem("roseops_api_url", url);
-      closeModal();
-      location.reload();
-    });
+  banner.querySelector("#setApiUrl").addEventListener("click", () => showConnectEngineModal());
+}
+
+function showConnectEngineModal() {
+  showModal("Connect the engine", `
+    <p class="onboarding-subtitle"><strong>Easiest:</strong> double-click <strong>RoseOps Studio</strong> on your desktop. It opens <code>http://localhost:3099</code> — no URL to type.</p>
+    <p class="onboarding-subtitle">You're on GitHub Pages (preview only). To run workflows and save API keys encrypted, connect to an engine below.</p>
+    <div class="connect-engine-options">
+      <button type="button" class="primary-button" id="useLocalEngine">I started RoseOps from my desktop icon</button>
+      <p class="onboarding-subtitle">Uses <code>http://localhost:3099</code> on this PC. The RoseOps Engine window must be running.</p>
+    </div>
+    <div class="picker-divider"><span>or deployed online</span></div>
+    <form id="apiUrlForm" class="credential-form-grid">
+      <label>Online engine URL<input id="apiUrlInput" type="url" placeholder="https://roseops-api.onrender.com" /></label>
+      <p class="onboarding-subtitle">Only if you deployed <code>server.js</code> to Render, Railway, etc. Leave blank if you use the desktop icon.</p>
+      <div class="modal-actions">
+        <button type="button" class="ghost-button" data-close-modal>Cancel</button>
+        <button type="submit" class="ghost-button">Connect online URL</button>
+        <button type="button" class="ghost-button" id="openLocalTab">Open localhost:3099 instead</button>
+      </div>
+    </form>`);
+
+  document.getElementById("useLocalEngine").addEventListener("click", () => {
+    sessionStorage.setItem("roseops_api_url", "http://localhost:3099");
+    closeModal();
+    location.reload();
+  });
+
+  document.getElementById("openLocalTab").addEventListener("click", () => {
+    window.open("http://localhost:3099", "_blank");
+    closeModal();
+    showToast("Use the localhost tab — that's the full app with no engine setup.");
+  });
+
+  document.getElementById("apiUrlForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const url = document.getElementById("apiUrlInput").value.trim().replace(/\/$/, "");
+    if (!url) {
+      showToast("Enter your deployed URL, or use the desktop icon button above.");
+      return;
+    }
+    sessionStorage.setItem("roseops_api_url", url);
+    closeModal();
+    location.reload();
   });
 }
 

@@ -369,6 +369,16 @@ button {
   font-size: 11px;
 }
 
+.connect-engine-options {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+
+.connect-engine-options .primary-button {
+  width: 100%;
+}
+
 .template-card .card-cta {
   display: block;
   margin-top: 6px;
