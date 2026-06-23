@@ -46,18 +46,27 @@
         <div class="template-list" id="templateList"></div>
       </section>
 
-      <section class="panel">
+      <section class="panel panel-keys">
         <div class="panel-heading">
-          <h2>Secrets vault</h2>
-          <button class="ghost-button add-workflow-btn" id="newCredential" title="Add a secret">+ Add</button>
+          <h2>API keys</h2>
+          <button class="ghost-button add-workflow-btn" id="newCredential" title="Add a key">+ Add</button>
         </div>
-        <p class="panel-hint">API keys &amp; passwords — stored encrypted</p>
+        <p class="panel-hint">Like n8n — connect your keys once, use them in any step</p>
+        <div class="key-quick-grid" id="keyQuickGrid">
+          <button type="button" class="key-quick-btn" data-provider="openai_api">OpenAI</button>
+          <button type="button" class="key-quick-btn" data-provider="google_gemini">Gemini</button>
+          <button type="button" class="key-quick-btn" data-provider="deepseek_api">DeepSeek</button>
+          <button type="button" class="key-quick-btn" data-provider="xai_grok">Grok</button>
+        </div>
         <div class="template-list" id="credentialList"></div>
       </section>
 
       <section class="panel panel-palette">
         <h2>Steps to add</h2>
-        <p class="panel-hint">Drag any step onto the canvas →</p>
+        <p class="panel-hint">AI models &amp; integrations — drag onto the canvas →</p>
+        <div class="palette-section-label">AI models</div>
+        <div class="block-palette block-palette-ai" id="blockPaletteAi"></div>
+        <div class="palette-section-label">Integrations</div>
         <div class="block-palette" id="blockPalette"></div>
       </section>
     </aside>

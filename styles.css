@@ -318,6 +318,56 @@ button {
   white-space: nowrap;
 }
 
+.key-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.key-quick-btn {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--panel);
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.key-quick-btn:hover {
+  border-color: var(--rose);
+  box-shadow: 0 4px 14px var(--rose-glow);
+  transform: translateY(-1px);
+}
+
+.panel-keys {
+  border-color: rgba(124, 92, 255, 0.25);
+}
+
+.palette-section-label {
+  margin: 4px 0 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.block-palette-ai {
+  margin-bottom: 10px;
+}
+
+.cred-inline-add {
+  margin-top: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
 .template-card .card-cta {
   display: block;
   margin-top: 6px;
