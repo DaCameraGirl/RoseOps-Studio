@@ -1,17 +1,22 @@
 {
   "name": "roseops-studio",
-  "version": "2.0.0",
-  "description": "Real workflow automation with a feminine devops twist",
+  "version": "3.0.0",
+  "description": "Enterprise workflow automation platform",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "better-sqlite3": "^11.0.0",
     "axios": "^1.6.0",
-    "node-cron": "^3.0.3",
+    "better-sqlite3": "^11.0.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.4.0",
+    "googleapis": "^140.0.0",
+    "helmet": "^7.1.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.14",
     "uuid": "^9.0.0"
   }
 }

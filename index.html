@@ -3,18 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RoseOps Studio</title>
+  <title>RoseOps Studio — Enterprise Workflow Automation</title>
   <link rel="icon" href="assets/roseops-icon.ico" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar" aria-label="Workflows and nodes">
       <div class="brand">
-        <img class="brand-mark image-mark" src="assets/roseops-icon.png" alt="" />
+        <div class="brand-mark">&#x2739;</div>
         <div>
           <h1>RoseOps</h1>
-          <p>Workflow automation engine</p>
+          <p>enterprise automation platform</p>
         </div>
       </div>
 
@@ -27,6 +30,22 @@
       </section>
 
       <section class="panel">
+        <div class="panel-heading">
+          <h2>Templates</h2>
+          <button class="icon-button" id="browseTemplates" title="Browse templates">&#x25BC;</button>
+        </div>
+        <div class="template-list" id="templateList"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Credentials</h2>
+          <button class="icon-button" id="newCredential" title="Add credential">+</button>
+        </div>
+        <div class="template-list" id="credentialList"></div>
+      </section>
+
+      <section class="panel">
         <h2>Add Node</h2>
         <div class="block-palette" id="blockPalette"></div>
       </section>
@@ -35,17 +54,17 @@
     <main class="workspace">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Automation Builder</p>
+          <p class="eyebrow">Automation Canvas</p>
           <h2 id="flowTitle">Workflow</h2>
           <div class="workspace-meta">
-            <span>live execution</span>
-            <span>real nodes</span>
-            <span>webhooks</span>
+            <span id="connectionStatus">connecting</span>
+            <span id="workflowVersion">v1</span>
+            <span id="nodeCountMeta">0 nodes</span>
           </div>
         </div>
         <div class="topbar-actions">
           <button class="ghost-button" id="autoArrange">Auto arrange</button>
-          <button class="primary-button" id="runFlow"><span aria-hidden="true">&#9654;</span>Execute</button>
+          <button class="primary-button" id="runFlow"><span aria-hidden="true">&#x25B6;</span>Execute</button>
         </div>
       </header>
 
@@ -55,7 +74,7 @@
             <span class="status-dot"></span>
             <span id="nodeCount">0 nodes</span>
           </div>
-          <div class="hint">Build your workflow — drag nodes, connect handles, hit Execute</div>
+          <div class="hint">&#x2726; drag nodes &middot; connect handles &middot; hit Execute</div>
         </div>
         <div class="board" id="board">
           <svg class="connections" id="connections" aria-hidden="true"></svg>
@@ -67,7 +86,7 @@
     <aside class="inspector" aria-label="Selected node settings">
       <section class="panel inspector-card">
         <div class="inspector-empty" id="inspectorEmpty">
-          <div class="empty-mark" aria-hidden="true">*</div>
+          <div class="empty-mark" aria-hidden="true">&#x2739;</div>
           <h2>Select a node</h2>
           <p>Choose a node to edit its settings, config, and execution results.</p>
         </div>
@@ -109,6 +128,26 @@
       </section>
     </aside>
   </div>
+
+  <div id="onboarding" class="onboarding hidden" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
+    <div class="onboarding-backdrop"></div>
+    <div class="onboarding-card">
+      <div class="onboarding-progress" id="onboardingProgress"></div>
+      <div id="onboardingContent"></div>
+    </div>
+  </div>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card">
+      <div class="panel-heading">
+        <h2 id="modalTitle">Dialog</h2>
+        <button type="button" class="icon-button" data-close-modal aria-label="Close">&#215;</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
