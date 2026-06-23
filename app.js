@@ -3,7 +3,9 @@ const API = IS_GITHUB_PAGES
   ? (sessionStorage.getItem("roseops_api_url") || "")
   : `${window.location.protocol}//${window.location.hostname}${window.location.port ? `:${window.location.port}` : ":3099"}`;
 const NODE_WIDTH = 340;
+const NODE_HEIGHT = 170;
 const NODE_MID_Y = 81;
+const CANVAS_PAD = 80;
 let connected = false;
 let apiKey = sessionStorage.getItem("roseops_api_key") || "";
 let credentialList = [];
@@ -73,7 +75,7 @@ let lastConnectedPair = null;
 
 const els = {};
 function initEls() {
-  const ids = ["templateList","blockPalette","flowTitle","nodeCount","board","nodes","connections","inspectorEmpty","inspectorForm","nodeName","nodeChannel","nodeNotes","nodePriority","nodeMode","deleteNode","resetFlow","autoArrange","runFlow","runLog","runState","chatForm","chatInput","chatLog","workflowList","newWorkflow","nodeConfig","browseTemplates","onboarding","onboardingContent","onboardingProgress","credentialList","newCredential","modal","modalTitle","modalBody","connectionStatus","workflowVersion","nodeCountMeta","canvasEmpty","canvasPickStarter","guidePanel","guideSteps","dismissGuide"];
+  const ids = ["templateList","blockPalette","flowTitle","nodeCount","board","nodes","connections","inspectorEmpty","inspectorForm","nodeName","nodeChannel","nodeNotes","nodePriority","nodeMode","deleteNode","resetFlow","autoArrange","fitView","runFlow","runLog","runState","chatForm","chatInput","chatLog","workflowList","newWorkflow","nodeConfig","browseTemplates","onboarding","onboardingContent","onboardingProgress","credentialList","newCredential","modal","modalTitle","modalBody","connectionStatus","workflowVersion","nodeCountMeta","canvasEmpty","canvasPickStarter","guidePanel","guideSteps","dismissGuide"];
   ids.forEach(id => els[id] = document.querySelector("#" + id));
 }
 
@@ -89,6 +91,7 @@ async function init() {
   els.deleteNode.addEventListener("click", deleteSelected);
   if (els.resetFlow) els.resetFlow.addEventListener("click", () => { if (currentWorkflowId) loadWorkflow(currentWorkflowId); });
   els.autoArrange.addEventListener("click", autoArrange);
+  if (els.fitView) els.fitView.addEventListener("click", () => { fitCanvasToNodes(); showToast("Centered your steps in view."); });
   els.runFlow.addEventListener("click", runFlow);
   els.nodes.addEventListener("pointerdown", (event) => {
     const outputHandle = event.target.closest(".node-handle-output");
@@ -161,10 +164,11 @@ function showPagesDeployBanner() {
   banner.id = "pagesBanner";
   banner.className = "pages-banner";
   banner.innerHTML = `
-    <strong>Enterprise engine not connected.</strong>
-    GitHub Pages hosts the studio UI. Execution, credentials vault, and audit require the Node server.
-    <button type="button" class="ghost-button" id="setApiUrl">Connect API URL</button>`;
+    <span><strong>Preview mode</strong> — browsing &amp; building works. Running workflows needs the engine.</span>
+    <button type="button" class="ghost-button" id="setApiUrl">Connect engine</button>
+    <button type="button" class="icon-button" id="dismissPagesBanner" aria-label="Dismiss">&#215;</button>`;
   document.querySelector(".workspace")?.prepend(banner);
+  banner.querySelector("#dismissPagesBanner")?.addEventListener("click", () => banner.remove());
   banner.querySelector("#setApiUrl").addEventListener("click", () => {
     showModal("Connect Enterprise Engine", `
       <p class="onboarding-subtitle">Enter the URL where you deployed <code>server.js</code> (e.g. https://roseops-api.onrender.com)</p>
@@ -370,6 +374,7 @@ async function loadWorkflow(id) {
   els.flowTitle.textContent = wf.name || "Untitled";
   els.workflowVersion.textContent = `v${workflowVersion}`;
   clearRun(); renderFlow(); await loadWorkflowList();
+  ensureNodesVisible();
   updateGuidePanel();
   webhookInfo = null;
   if (connected) {
@@ -464,7 +469,10 @@ async function cloneTemplate(template, opts = {}) {
   els.flowTitle.textContent = name;
   clearRun();
   if (!opts.skipArrange) autoArrange();
-  renderFlow();
+  else {
+    renderFlow();
+    ensureNodesVisible();
+  }
   await loadWorkflowList();
   if (!opts.silent) {
     showToast(`"${name}" added — tap each step to configure it.`, "success");
@@ -529,6 +537,7 @@ function renderFlow() {
   renderConnections();
   renderInspector();
   renderCanvasEmpty();
+  resizeCanvasSurface();
   updateGuidePanel();
   if (spawnNodeId) {
     setTimeout(() => { spawnNodeId = null; }, 450);
@@ -860,14 +869,26 @@ function deleteSelected() {
 }
 
 function autoArrange() {
-  const columns = 3;
+  const gapX = 56;
+  const gapY = 72;
+  const startX = 32;
+  const startY = 72;
+  const rowW = NODE_WIDTH + gapX;
+
   nodes.forEach((item, index) => {
-    item.x = 90 + (index % columns) * 390;
-    item.y = 140 + Math.floor(index / columns) * 250;
+    if (nodes.length <= 5) {
+      item.x = startX + index * rowW;
+      item.y = startY;
+    } else {
+      const cols = 3;
+      item.x = startX + (index % cols) * rowW;
+      item.y = startY + Math.floor(index / cols) * (NODE_HEIGHT + gapY);
+    }
   });
   clearRun();
   renderFlow();
   saveWorkflow();
+  fitCanvasToNodes();
 }
 
 async function runFlow() {
@@ -1319,6 +1340,74 @@ function updateGuidePanel() {
 function renderCanvasEmpty() {
   if (!els.canvasEmpty) return;
   els.canvasEmpty.classList.toggle("hidden", !(nodes.length === 0 && currentWorkflowId));
+}
+
+function getNodesBounds() {
+  if (!nodes.length) return null;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  nodes.forEach((n) => {
+    minX = Math.min(minX, n.x);
+    minY = Math.min(minY, n.y);
+    maxX = Math.max(maxX, n.x + NODE_WIDTH);
+    maxY = Math.max(maxY, n.y + NODE_HEIGHT);
+  });
+  return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+}
+
+function resizeCanvasSurface() {
+  if (!els.nodes || !els.connections || !els.board) return;
+  const bounds = getNodesBounds();
+  const viewW = Math.max(els.board.clientWidth || 800, 480);
+  const viewH = Math.max(els.board.clientHeight || 420, 420);
+
+  if (!bounds) {
+    els.nodes.style.width = `${viewW}px`;
+    els.nodes.style.height = `${viewH}px`;
+    els.connections.setAttribute("width", viewW);
+    els.connections.setAttribute("height", viewH);
+    return;
+  }
+
+  const w = Math.max(viewW, bounds.maxX + CANVAS_PAD);
+  const h = Math.max(viewH, bounds.maxY + CANVAS_PAD);
+  els.nodes.style.width = `${w}px`;
+  els.nodes.style.height = `${h}px`;
+  els.connections.setAttribute("width", w);
+  els.connections.setAttribute("height", h);
+}
+
+function fitCanvasToNodes() {
+  if (!els.board || !nodes.length) return;
+  requestAnimationFrame(() => {
+    const bounds = getNodesBounds();
+    if (!bounds) return;
+    const pad = 24;
+    els.board.scrollLeft = Math.max(0, bounds.minX - pad);
+    els.board.scrollTop = Math.max(0, bounds.minY - pad);
+  });
+}
+
+function ensureNodesVisible() {
+  if (!nodes.length) return;
+  const bounds = getNodesBounds();
+  if (!bounds) return;
+
+  const viewW = els.board?.clientWidth || 800;
+  const viewH = els.board?.clientHeight || 420;
+  const offScreen = bounds.minY > viewH * 0.35 || bounds.minX > viewW * 0.5 || bounds.maxY > viewH + 200;
+
+  if (offScreen) autoArrange();
+  else {
+    resizeCanvasSurface();
+    fitCanvasToNodes();
+  }
+
+  if (window.matchMedia("(max-width: 820px)").matches) {
+    els.board?.closest(".board-wrap")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 // ===== Friendly errors =====
