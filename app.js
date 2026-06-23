@@ -1059,15 +1059,62 @@ function showCredentialDetail(id) {
 }
 
 // ===== Onboarding =====
+let onboardingHandlersBound = false;
+
 function showOnboarding() {
   onboardingStep = 0;
   els.onboarding.classList.remove("hidden");
+  bindOnboardingHandlers();
   renderOnboardingStep();
 }
 
 function completeOnboarding() {
-  localStorage.setItem(ONBOARDING_KEY, "1");
-  els.onboarding.classList.add("hidden");
+  try { localStorage.setItem(ONBOARDING_KEY, "1"); } catch {}
+  els.onboarding?.classList.add("hidden");
+}
+
+function bindOnboardingHandlers() {
+  if (onboardingHandlersBound || !els.onboardingContent) return;
+  onboardingHandlersBound = true;
+  els.onboardingContent.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn || btn.disabled) return;
+    handleOnboardingAction(btn.dataset.action, btn);
+  });
+}
+
+async function handleOnboardingAction(action, btn) {
+  if (action === "next") {
+    onboardingStep++;
+    renderOnboardingStep();
+    return;
+  }
+  if (action === "back") {
+    onboardingStep = Math.max(0, onboardingStep - 1);
+    renderOnboardingStep();
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  completeOnboarding();
+
+  try {
+    if (action === "guided") {
+      await createGuidedWorkflow();
+    } else if (action === "template") {
+      showWorkflowPickerModal();
+      addChatMessage("bot", "Pick an operations starter from the library.");
+    } else if (action === "scratch") {
+      await createWorkflow("Untitled", "");
+      addChatMessage("bot", "Empty workflow ready — drag nodes from the palette to build.");
+    } else if (action === "skip") {
+      addChatMessage("bot", "You're in. Hit + anytime to pick a starter.");
+    }
+  } catch (err) {
+    addChatMessage("bot", err?.message || "Setup hit a snag — use + to pick a starter.");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 function renderOnboardingProgress() {
@@ -1132,19 +1179,9 @@ function renderOnboardingStep() {
       </div>
       <div class="onboarding-actions">
         <button type="button" class="ghost-button" data-action="back">Back</button>
+        <button type="button" class="ghost-button" data-action="skip">Skip for now</button>
       </div>`;
   }
-
-  content.querySelectorAll("[data-action]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const action = btn.dataset.action;
-      if (action === "next") { onboardingStep++; renderOnboardingStep(); }
-      else if (action === "back") { onboardingStep = Math.max(0, onboardingStep - 1); renderOnboardingStep(); }
-      else if (action === "guided") { completeOnboarding(); await createGuidedWorkflow(); }
-      else if (action === "template") { completeOnboarding(); addChatMessage("bot", "Select an operations template from the sidebar. Configure credentials before execution."); }
-      else if (action === "scratch") { completeOnboarding(); await createWorkflow("Untitled", ""); addChatMessage("bot", "Empty workflow created. Add credentials to the vault first."); }
-    });
-  });
 }
 
 // ===== Palette drag & drop =====
