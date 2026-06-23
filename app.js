@@ -66,6 +66,7 @@ let WORKFLOW_TEMPLATES = [];
 const ONBOARDING_KEY = "roseops_onboarded";
 const STARTERS_SEED_KEY = "roseops_starters_seeded";
 const GUIDE_DISMISS_KEY = "roseops_guide_dismissed";
+const HOWTO_CONNECT_KEY = "roseops_howto_connect_seen";
 const ONBOARDING_STEPS = 2;
 
 let localDb = JSON.parse(localStorage.getItem("roseops_workflows") || "[]");
@@ -113,6 +114,7 @@ async function init() {
   });
   els.newWorkflow.addEventListener("click", () => showWorkflowPickerModal());
   if (els.newCredential) els.newCredential.addEventListener("click", () => showNewCredentialModal());
+  if (els.connectionStatus) els.connectionStatus.addEventListener("click", () => showHowToConnectModal());
   els.keyQuickGrid?.querySelectorAll("[data-provider]").forEach((btn) => {
     btn.addEventListener("click", () => showQuickCredentialModal(btn.dataset.provider));
   });
@@ -153,7 +155,11 @@ async function connectToServer() {
     connected = false;
     els.connectionStatus.textContent = "● pages (static)";
     showPagesDeployBanner();
-    addChatMessage("bot", "You're on GitHub Pages (preview). Double-click the RoseOps desktop icon for the full app, or hit Connect engine → I started RoseOps from my desktop icon.");
+    addChatMessage("bot", "You're on GitHub Pages (preview only). Tap the status badge (● pages) or type connect for setup steps.");
+    if (!sessionStorage.getItem(HOWTO_CONNECT_KEY)) {
+      sessionStorage.setItem(HOWTO_CONNECT_KEY, "1");
+      setTimeout(() => showHowToConnectModal(), 600);
+    }
     return;
   }
   try {
@@ -179,12 +185,40 @@ function showPagesDeployBanner() {
   banner.id = "pagesBanner";
   banner.className = "pages-banner";
   banner.innerHTML = `
-    <span><strong>Preview mode</strong> — browsing &amp; building works. Running workflows needs the engine.</span>
+    <span><strong>Preview mode</strong> — you can build flows here, but <strong>Run workflow</strong> needs the engine.</span>
+    <button type="button" class="ghost-button" id="howToConnect">How to connect</button>
     <button type="button" class="ghost-button" id="setApiUrl">Connect engine</button>
-    <button type="button" class="icon-button" id="dismissPagesBanner" aria-label="Dismiss">&#215;</button>`;
+    <button type="button" class="icon-button" id="dismissPagesBanner" aria-label="Dismiss">&#215;</button>
+    <p class="pages-banner-steps">New here? <strong>1)</strong> Clone the repo · <strong>2)</strong> Run <code>npm install</code> then <code>npm start</code> · <strong>3)</strong> Open <code>localhost:3099</code> — or tap <strong>How to connect</strong> for all options.</p>`;
   document.querySelector(".workspace")?.prepend(banner);
   banner.querySelector("#dismissPagesBanner")?.addEventListener("click", () => banner.remove());
+  banner.querySelector("#howToConnect")?.addEventListener("click", () => showHowToConnectModal());
   banner.querySelector("#setApiUrl").addEventListener("click", () => showConnectEngineModal());
+}
+
+function showHowToConnectModal() {
+  els.modal.querySelector(".modal-card")?.classList.add("modal-wide");
+  showModal("How to connect RoseOps", `
+    <p class="onboarding-subtitle">RoseOps has two parts: the <strong>studio</strong> (this UI) and the <strong>engine</strong> (<code>server.js</code>) that runs workflows and stores API keys safely.</p>
+    <div class="howto-steps">
+      <div class="howto-step"><span class="howto-step-num">A</span><span><strong>Run on your computer (recommended)</strong><span><code>git clone</code> → <code>npm install</code> → <code>npm start</code> → open <code>http://localhost:3099</code>. Everything works — no extra URL.</span></span></div>
+      <div class="howto-step"><span class="howto-step-num">B</span><span><strong>Desktop shortcut</strong><span>After cloning, double-click <code>start-roseops.cmd</code> (or create a desktop icon). Same as option A — opens localhost automatically.</span></span></div>
+      <div class="howto-step"><span class="howto-step-num">C</span><span><strong>GitHub Pages + engine</strong><span>You're on Pages now (preview). Deploy <code>server.js</code> to Render/Railway, copy that URL, then <strong>Connect engine</strong> — or run locally and click <strong>I started RoseOps from my desktop icon</strong>.</span></span></div>
+    </div>
+    <p class="onboarding-subtitle">API keys (OpenAI, Gemini, DeepSeek, Grok) go in <strong>API keys</strong> on the left once connected.</p>
+    <div class="modal-actions">
+      <button type="button" class="ghost-button" data-close-modal>Got it</button>
+      <button type="button" class="ghost-button" id="howtoOpenLocal">Open localhost:3099</button>
+      <button type="button" class="primary-button" id="howtoConnectEngine">Connect engine now</button>
+    </div>`);
+  document.getElementById("howtoOpenLocal")?.addEventListener("click", () => {
+    window.open("http://localhost:3099", "_blank");
+    showToast("If that tab loads, use it — that's the full app.");
+  });
+  document.getElementById("howtoConnectEngine")?.addEventListener("click", () => {
+    closeModal();
+    showConnectEngineModal();
+  });
 }
 
 function showConnectEngineModal() {
@@ -1117,7 +1151,9 @@ function handleChatCommand(raw) {
     if (match) { addBlock(match.type); addChatMessage("bot", `Added ${match.name}.`); }
     else { addChatMessage("bot", `Unknown. Try: add http / add code / add delay / add webhook / add schedule / add email`); }
   } else if (lower === "help" || lower === "?") {
-    addChatMessage("bot", "Commands: run / reset / arrange / add [type] / help | Drag nodes from palette · connect handles · clone templates in sidebar");
+    addChatMessage("bot", "Commands: run · reset · arrange · add [type] · connect · help | Tap ● status (top left) for how to connect the engine.");
+  } else if (lower === "connect" || lower === "engine" || lower === "setup") {
+    showHowToConnectModal();
   } else {
     addChatMessage("bot", `Unknown. Type "help".`);
   }
