@@ -56,10 +56,19 @@ npm start
 
 Open **http://localhost:3099** — UI + execution engine together.
 
-### GitHub Pages (UI only)
+### GitHub Pages (UI preview only)
 
-**[dacameragirl.github.io/RoseOps-Studio](https://dacameragirl.github.io/RoseOps-Studio/)** hosts the studio interface.  
-Deploy `server.js` to Render/Railway/Fly.io, then click **Connect API URL** in the app.
+**[dacameragirl.github.io/RoseOps-Studio](https://dacameragirl.github.io/RoseOps-Studio/)** hosts the studio UI for browsing and building flows.  
+**Running workflows requires the engine** — visitors see an in-app **How to connect** guide automatically.
+
+| Who | What to do |
+|-----|------------|
+| **New users** | Clone repo → `npm install` → `npm start` → open **http://localhost:3099** |
+| **Desktop shortcut** | Run `start-roseops.cmd` (opens localhost + engine) |
+| **GitHub Pages visitors** | Tap **How to connect** in the banner, or the **● pages** status badge |
+| **Self-hosters** | Deploy `server.js` to Render/Railway → **Connect engine** → paste your URL |
+
+In the app: type **`connect`** in Assistant chat, or click the connection status (● pages / ● offline).
 
 ---
 

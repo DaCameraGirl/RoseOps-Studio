@@ -525,7 +525,8 @@ button {
   margin-top: 10px;
 }
 
-.workspace-meta span {
+.workspace-meta span,
+.status-link {
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
   padding: 4px 10px;
@@ -533,6 +534,68 @@ button {
   font-size: 11px;
   font-weight: 600;
   background: rgba(255, 255, 255, 0.7);
+}
+
+.status-link {
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.status-link:hover {
+  border-color: var(--rose);
+  color: var(--rose-dark);
+}
+
+.howto-steps {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.howto-step {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.75);
+  text-align: left;
+}
+
+.howto-step-num {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--rose), var(--lavender));
+}
+
+.howto-step strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.howto-step span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.pages-banner-steps {
+  flex: 1 1 100%;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .topbar-actions {
