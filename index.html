@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RoseOps Studio — Enterprise Workflow Automation</title>
   <link rel="icon" href="assets/roseops-icon.ico" />
-  <link rel="stylesheet" href="styles.css?v=15" />
+  <link rel="stylesheet" href="styles.css?v=16" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&display=swap" rel="stylesheet" />
@@ -59,13 +59,13 @@
           <h2>API keys</h2>
           <button class="ghost-button add-workflow-btn" id="newCredential" title="Add a key">+ Add</button>
         </div>
-        <p class="panel-hint">Like n8n — connect keys once. <button type="button" class="guide-inline-link" id="keysSetupHelp">How to set up Local LLM</button></p>
+        <p class="panel-hint">Free until limits hit — <button type="button" class="guide-inline-link" id="keysSetupHelp">how to set up every AI option</button></p>
         <div class="key-quick-grid" id="keyQuickGrid">
-          <button type="button" class="key-quick-btn" data-provider="openai_api">OpenAI</button>
-          <button type="button" class="key-quick-btn" data-provider="google_gemini">Gemini</button>
-          <button type="button" class="key-quick-btn" data-provider="deepseek_api">DeepSeek</button>
-          <button type="button" class="key-quick-btn" data-provider="xai_grok">Grok</button>
-          <button type="button" class="key-quick-btn key-quick-local" data-provider="ollama_local">Local</button>
+          <button type="button" class="key-quick-btn key-quick-local" data-provider="ollama_local" title="Always free — runs on your PC">Local</button>
+          <button type="button" class="key-quick-btn" data-provider="google_gemini" title="Free tier — rate limits">Gemini</button>
+          <button type="button" class="key-quick-btn" data-provider="deepseek_api" title="Freemium — generous free usage">DeepSeek</button>
+          <button type="button" class="key-quick-btn" data-provider="xai_grok" title="Free credits until they run out">Grok</button>
+          <button type="button" class="key-quick-btn" data-provider="openai_api" title="Trial credits — then paid">OpenAI</button>
         </div>
         <div class="template-list" id="credentialList"></div>
       </section>
@@ -94,7 +94,7 @@
           </div>
         </div>
         <div class="topbar-actions">
-          <button class="ghost-button" id="openSetupGuide" title="Engine, Grok keys, and quick start">Setup guide</button>
+          <button class="ghost-button" id="openSetupGuide" title="Engine + all free AI setup">Setup guide</button>
           <button class="ghost-button" id="fitView">Show all steps</button>
           <button class="ghost-button" id="autoArrange">Tidy up layout</button>
           <button class="primary-button" id="runFlow"><span aria-hidden="true">&#x25B6;</span> Run workflow</button>
@@ -133,7 +133,7 @@
         <ol class="guide-steps" id="guideSteps">
           <li class="guide-step guide-step-engine hidden" data-step="engine"><span class="guide-check">1</span> <button type="button" class="guide-inline-link" data-guide-action="engine">Connect the engine</button> — required to run workflows</li>
           <li class="guide-step" data-step="workflow"><span class="guide-check">2</span> Pick a workflow on the left</li>
-          <li class="guide-step" data-step="keys"><span class="guide-check">3</span> <button type="button" class="guide-inline-link" data-guide-action="grok">Add API keys</button> or <button type="button" class="guide-inline-link" data-guide-action="local">free local LLM</button></li>
+          <li class="guide-step" data-step="keys"><span class="guide-check">3</span> <button type="button" class="guide-inline-link" data-guide-action="keys">Add a free AI key</button> — Local, Gemini, DeepSeek, Grok, or OpenAI</li>
           <li class="guide-step" data-step="nodes"><span class="guide-check">4</span> Drag steps onto the canvas</li>
           <li class="guide-step" data-step="connect"><span class="guide-check">5</span> Connect the dots between steps</li>
           <li class="guide-step" data-step="run"><span class="guide-check">6</span> Hit <strong>Run workflow</strong></li>
@@ -179,7 +179,7 @@
         </div>
         <div id="chatLog" class="chat-log"></div>
         <form id="chatForm" class="chat-form" autocomplete="off">
-          <input id="chatInput" type="text" placeholder="Try: connect, grok, help" />
+          <input id="chatInput" type="text" placeholder="Try: gemini, grok, ollama, help" />
           <button type="submit" class="chat-send-btn" aria-label="Send">&#8593;</button>
         </form>
       </section>
@@ -207,6 +207,6 @@
 
   <div id="toastHost" class="toast-host" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="app.js?v=15"></script>
+  <script src="app.js?v=16"></script>
 </body>
 </html>

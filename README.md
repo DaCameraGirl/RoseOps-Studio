@@ -70,15 +70,19 @@ Open **http://localhost:3099** — UI + execution engine together.
 
 In the app: type **`connect`** in Assistant chat, or click the connection status (● pages / ● offline).
 
-### Free local LLMs (PowerShell + Ollama)
+### Free AI options (all providers)
 
-Full step-by-step checklist is in the app: **Setup guide → section 3**. Summary:
+The app **Setup guide → section 2** covers every option — free until limits hit:
 
-1. Start RoseOps: `git clone` → `npm install` → `npm start` → `localhost:3099`
-2. Install Ollama: `winget install Ollama.Ollama`
-3. Pull a model: `ollama pull llama3.2` → verify with `ollama list`
-4. RoseOps: **API keys → Local** → Save
-5. Open **AI Assistant** template → **AI Chat** step → provider **ollama**, model **llama3.2** → **Run workflow**
+| Provider | Cost | Get key |
+|----------|------|---------|
+| **Local (Ollama)** | Always free | PowerShell: `winget install Ollama.Ollama` → `ollama pull llama3.2` |
+| **Gemini** | Free tier | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| **DeepSeek** | Freemium | [platform.deepseek.com](https://platform.deepseek.com) |
+| **Grok** | Free credits | [console.x.ai](https://console.x.ai) |
+| **OpenAI** | Trial → paid | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+
+In RoseOps: **API keys** → tap the provider → **AI Chat** step → matching provider + model → **Run workflow**.
 
 ---
 

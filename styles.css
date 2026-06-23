@@ -801,6 +801,88 @@ button {
   font-size: inherit;
 }
 
+.howto-table-sub {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.howto-table-ai td {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.ai-provider-grid {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 4px;
+}
+
+.ai-provider-card {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.8);
+  text-align: left;
+}
+
+.ai-provider-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ai-provider-card-note {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.ai-provider-card-steps {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.ai-provider-card-steps li + li {
+  margin-top: 4px;
+}
+
+.ai-free-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(168, 216, 200, 0.35);
+  border: 1px solid rgba(168, 216, 200, 0.8);
+}
+
+.ai-free-badge-sm {
+  font-size: 9px;
+  padding: 1px 6px;
+  vertical-align: middle;
+}
+
+.setup-ai-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.setup-ai-list li + li {
+  margin-top: 6px;
+}
+
 .topbar-actions {
   display: flex;
   flex-wrap: wrap;

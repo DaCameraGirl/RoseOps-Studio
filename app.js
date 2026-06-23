@@ -31,12 +31,95 @@ async function apiFetch(path, opts = {}) {
 const LOCAL_CREDS_KEY = "roseops_local_credentials";
 const AI_STEP_TYPES = new Set(["llm"]);
 const CREDENTIAL_PRESETS = {
-  openai_api: { label: "OpenAI", name: "My OpenAI Key", hint: "Get a key at platform.openai.com/api-keys" },
-  google_gemini: { label: "Google Gemini", name: "My Gemini Key", hint: "Get a key at aistudio.google.com/apikey" },
-  deepseek_api: { label: "DeepSeek", name: "My DeepSeek Key", hint: "Get a key at platform.deepseek.com" },
-  xai_grok: { label: "xAI Grok", name: "My Grok Key", hint: "Get a key at console.x.ai" },
-  ollama_local: { label: "Ollama (local)", name: "My PC — Ollama", hint: "Free LLMs on your computer — install via Setup guide" },
+  openai_api: { label: "OpenAI", name: "My OpenAI Key", hint: "New accounts often get free trial credits — then paid. Key at platform.openai.com/api-keys" },
+  google_gemini: { label: "Google Gemini", name: "My Gemini Key", hint: "Free tier with rate limits. Key at aistudio.google.com/apikey" },
+  deepseek_api: { label: "DeepSeek", name: "My DeepSeek Key", hint: "Low-cost / promotional free usage. Key at platform.deepseek.com" },
+  xai_grok: { label: "xAI Grok", name: "My Grok Key", hint: "Free credits until they run out — then paid. Key at console.x.ai" },
+  ollama_local: { label: "Ollama (local)", name: "My PC — Ollama", hint: "Always free on your computer — see Setup guide section 3" },
 };
+
+const AI_PROVIDER_GUIDES = [
+  {
+    id: "local",
+    label: "Local (Ollama)",
+    cost: "Always free",
+    costDetail: "Runs on your PC — no API bill, ever",
+    signupUrl: null,
+    signupText: "PowerShell — see section 4",
+    preset: "ollama_local",
+    provider: "ollama",
+    model: "llama3.2",
+    roseopsBtn: "Local",
+    getKey: ["winget install Ollama.Ollama", "ollama pull llama3.2", "ollama list"],
+    inRoseOps: "API keys → Local → Save (default URL)",
+    inWorkflow: "AI Chat → provider ollama → model llama3.2",
+    section: "local",
+  },
+  {
+    id: "gemini",
+    label: "Google Gemini",
+    cost: "Free tier",
+    costDetail: "Free until rate limits — no card needed for AI Studio key",
+    signupUrl: "https://aistudio.google.com/apikey",
+    signupText: "aistudio.google.com/apikey",
+    preset: "google_gemini",
+    provider: "google",
+    model: "gemini-1.5-flash",
+    roseopsBtn: "Gemini",
+    getKey: ["Sign in with Google", "Click Create API key", "Copy the key"],
+    inRoseOps: "API keys → Gemini → paste → Save",
+    inWorkflow: "AI Chat → provider google → model gemini-1.5-flash",
+    section: "keys",
+  },
+  {
+    id: "deepseek",
+    label: "DeepSeek",
+    cost: "Freemium",
+    costDetail: "Generous free/low-cost usage — limits apply",
+    signupUrl: "https://platform.deepseek.com",
+    signupText: "platform.deepseek.com",
+    preset: "deepseek_api",
+    provider: "deepseek",
+    model: "deepseek-chat",
+    roseopsBtn: "DeepSeek",
+    getKey: ["Create account", "API keys → create key", "Copy the key"],
+    inRoseOps: "API keys → DeepSeek → paste → Save",
+    inWorkflow: "AI Chat → provider deepseek → model deepseek-chat",
+    section: "keys",
+  },
+  {
+    id: "grok",
+    label: "xAI Grok",
+    cost: "Free credits",
+    costDetail: "Free usage until credits run out — then paid",
+    signupUrl: "https://console.x.ai",
+    signupText: "console.x.ai",
+    preset: "xai_grok",
+    provider: "xai",
+    model: "grok-2-latest",
+    roseopsBtn: "Grok",
+    getKey: ["Sign in at console.x.ai", "API keys → create", "Copy the key"],
+    inRoseOps: "API keys → Grok → paste → Save",
+    inWorkflow: "AI Chat → provider xai → model grok-2-latest",
+    section: "keys",
+  },
+  {
+    id: "openai",
+    label: "OpenAI",
+    cost: "Trial → paid",
+    costDetail: "New accounts may get free trial credits — then pay-as-you-go",
+    signupUrl: "https://platform.openai.com/api-keys",
+    signupText: "platform.openai.com/api-keys",
+    preset: "openai_api",
+    provider: "openai",
+    model: "gpt-4o-mini",
+    roseopsBtn: "OpenAI",
+    getKey: ["Sign up / sign in", "API keys → Create new secret key", "Copy immediately (shown once)"],
+    inRoseOps: "API keys → OpenAI → paste → Save",
+    inWorkflow: "AI Chat → provider openai → model gpt-4o-mini",
+    section: "keys",
+  },
+];
 
 let localCredentialList = [];
 let blockTypes = [
@@ -122,13 +205,13 @@ async function init() {
     const btn = e.target.closest("[data-guide-action]");
     if (!btn) return;
     if (btn.dataset.guideAction === "engine") showSetupGuideModal("engine");
-    if (btn.dataset.guideAction === "grok") showSetupGuideModal("keys");
+    if (btn.dataset.guideAction === "keys" || btn.dataset.guideAction === "grok") showSetupGuideModal("keys");
     if (btn.dataset.guideAction === "local") showSetupGuideModal("local");
   });
   els.keyQuickGrid?.querySelectorAll("[data-provider]").forEach((btn) => {
     btn.addEventListener("click", () => showQuickCredentialModal(btn.dataset.provider));
   });
-  document.getElementById("keysSetupHelp")?.addEventListener("click", () => showSetupGuideModal("local"));
+  document.getElementById("keysSetupHelp")?.addEventListener("click", () => showSetupGuideModal("keys"));
   document.querySelectorAll("[data-close-modal]").forEach((el) => el.addEventListener("click", closeModal));
   if (els.browseTemplates) {
     els.browseTemplates.addEventListener("click", () => {
@@ -231,6 +314,37 @@ ollama pull llama3.2
 ollama list
 ollama run llama3.2 "Say hello in one sentence"`;
 
+function buildAiProvidersTableHtml() {
+  const rows = AI_PROVIDER_GUIDES.map((p) => `
+    <tr>
+      <td><strong>${p.label}</strong><br><span class="howto-table-sub">${p.cost}</span></td>
+      <td>${p.costDetail}</td>
+      <td>${p.signupUrl ? `<a href="${p.signupUrl}" target="_blank" rel="noopener">${p.signupText}</a>` : p.signupText}</td>
+      <td><strong>${p.roseopsBtn}</strong> → <code>${p.provider}</code> / <code>${p.model}</code></td>
+    </tr>`).join("");
+  return `<table class="howto-table howto-table-ai">
+    <thead><tr><th>Provider</th><th>Free usage</th><th>Get a key</th><th>In RoseOps</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function buildCloudAiCardsHtml() {
+  return AI_PROVIDER_GUIDES.filter((p) => p.section === "keys").map((p) => `
+    <div class="ai-provider-card" id="ai-setup-${p.id}">
+      <div class="ai-provider-card-head">
+        <strong>${p.label}</strong>
+        <span class="ai-free-badge">${p.cost}</span>
+      </div>
+      <p class="ai-provider-card-note">${p.costDetail}</p>
+      <ol class="ai-provider-card-steps">
+        <li>Get key: ${p.signupUrl ? `<a href="${p.signupUrl}" target="_blank" rel="noopener">${p.signupText}</a> — ${p.getKey.join(" → ")}` : p.getKey.join(" → ")}</li>
+        <li>${p.inRoseOps}</li>
+        <li>${p.inWorkflow} → <strong>Run workflow</strong></li>
+      </ol>
+      <button type="button" class="ghost-button ai-provider-add-btn" data-ai-preset="${p.preset}">Add ${p.label} key</button>
+    </div>`).join("");
+}
+
 function getSetupGuideBodyHtml() {
   const pagesNote = IS_GITHUB_PAGES
     ? `<p class="onboarding-subtitle">You're on <strong>GitHub Pages</strong> — great for browsing and building. Running workflows needs the engine (below).</p>`
@@ -253,15 +367,13 @@ function getSetupGuideBodyHtml() {
         <tr><td>Self-hosters</td><td>Deploy <code>server.js</code> → <strong>Connect engine</strong> → paste your URL</td></tr>
       </tbody>
     </table>
-    <h3 class="howto-section-title" id="setup-keys">2 · Connect Grok &amp; other AI keys</h3>
-    <p class="onboarding-subtitle">Like n8n — add keys once in <strong>API keys</strong> (left sidebar), then pick them in any <strong>AI Chat</strong> step.</p>
-    <div class="howto-steps">
-      <div class="howto-step"><span class="howto-step-num">1</span><span><strong>Connect the engine</strong><span>Keys are encrypted in the vault when the engine is running. Preview mode saves keys in this browser only.</span></span></div>
-      <div class="howto-step"><span class="howto-step-num">2</span><span><strong>Get your Grok key</strong><span>Sign in at <a href="https://console.x.ai" target="_blank" rel="noopener">console.x.ai</a> and create an API key.</span></span></div>
-      <div class="howto-step"><span class="howto-step-num">3</span><span><strong>Add in RoseOps</strong><span>Left sidebar → <strong>API keys</strong> → tap <strong>Grok</strong> (or OpenAI / Gemini / DeepSeek) → paste key → save.</span></span></div>
-      <div class="howto-step"><span class="howto-step-num">4</span><span><strong>Use in a workflow</strong><span>Drag <strong>AI Chat</strong> onto the canvas → set Provider to <strong>xai</strong> → pick your Grok key → set model (e.g. <code>grok-2</code>) → run.</span></span></div>
-    </div>
-    <h3 class="howto-section-title" id="setup-local-llm">3 · Free local LLMs — full setup</h3>
+    <h3 class="howto-section-title" id="setup-keys">2 · All AI options — free until it ain't</h3>
+    <p class="onboarding-subtitle">Pick any provider below. <strong>Local</strong> is always free. Cloud ones are <strong>free tier / free credits</strong> until limits hit — then they bill or throttle. Add keys once in <strong>API keys</strong> (sidebar), use in any <strong>AI Chat</strong> step.</p>
+    <p class="onboarding-subtitle"><strong>First:</strong> connect the engine (section 1) so keys are encrypted and workflows can run.</p>
+    ${buildAiProvidersTableHtml()}
+    <p class="howto-code-label">Cloud keys — setup each provider</p>
+    <div class="ai-provider-grid">${buildCloudAiCardsHtml()}</div>
+    <h3 class="howto-section-title" id="setup-local-llm">3 · Local LLMs — always free (full setup)</h3>
     <p class="onboarding-subtitle">Run AI on <strong>your PC</strong> with zero API cost. You need <strong>two things running</strong>: the RoseOps engine (<code>localhost:3099</code>) and Ollama (<code>localhost:11434</code>).</p>
     <div class="howto-checklist">
       <p class="howto-checklist-title">Complete checklist (do in order)</p>
@@ -289,7 +401,18 @@ function getSetupGuideBodyHtml() {
         <li><strong>Slow first reply</strong> — normal; Ollama loads the model into RAM on first run.</li>
       </ul>
     </div>
-    <p class="onboarding-subtitle">Assistant shortcuts: <code>connect</code> · <code>ollama</code> · <code>local</code> · <code>setup</code> · <code>help</code></p>`;
+    <p class="onboarding-subtitle">Assistant shortcuts: <code>connect</code> · <code>gemini</code> · <code>deepseek</code> · <code>grok</code> · <code>openai</code> · <code>ollama</code> · <code>keys</code> · <code>help</code></p>`;
+}
+
+function bindSetupGuideAiButtons() {
+  document.querySelectorAll(".ai-provider-add-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const preset = btn.dataset.aiPreset;
+      if (!preset) return;
+      closeModal();
+      showQuickCredentialModal(preset);
+    });
+  });
 }
 
 function renderSetupDrawer() {
@@ -302,25 +425,21 @@ function renderSetupDrawer() {
   const keyCount = getCredentialList().length;
   els.setupDrawerBody.innerHTML = `
     ${status}
-    <p class="setup-path-label">Free local AI setup:</p>
-    <ol class="setup-mini-steps">
-      <li><code>npm start</code> → open <code>localhost:3099</code></li>
-      <li>PowerShell: <code>winget install Ollama.Ollama</code></li>
-      <li><code>ollama pull llama3.2</code> then <code>ollama list</code></li>
-      <li>Tap <strong>Local</strong> under API keys → Save</li>
-      <li>AI Chat step → <strong>ollama</strong> → model <code>llama3.2</code> → Run</li>
-    </ol>
+    <p class="setup-path-label">Free AI — pick one (sidebar buttons):</p>
+    <ul class="setup-ai-list">
+      ${AI_PROVIDER_GUIDES.map((p) => `<li><strong>${p.roseopsBtn}</strong> <span class="ai-free-badge ai-free-badge-sm">${p.cost}</span> — ${p.section === "local" ? "PowerShell + Ollama" : p.signupText}</li>`).join("")}
+    </ul>
     <p class="setup-keys-note">${keyCount ? `${keyCount} API key${keyCount === 1 ? "" : "s"} saved` : "No API keys yet"}</p>
     <div class="setup-drawer-actions">
       <button type="button" class="ghost-button" id="drawerFullGuide">Full guide</button>
-      <button type="button" class="ghost-button" id="drawerLocalLlm">How to set up Local</button>
+      <button type="button" class="ghost-button" id="drawerAiKeys">All AI setup</button>
       ${connected ? "" : `<button type="button" class="ghost-button" id="drawerConnectEngine">Connect engine</button>`}
-      <button type="button" class="primary-button" id="drawerAddOllama">Add Local key</button>
+      <button type="button" class="primary-button" id="drawerAddGemini">Add Gemini (free)</button>
     </div>`;
   els.setupDrawerBody.querySelector("#drawerFullGuide")?.addEventListener("click", () => showSetupGuideModal());
-  els.setupDrawerBody.querySelector("#drawerLocalLlm")?.addEventListener("click", () => showSetupGuideModal("local"));
+  els.setupDrawerBody.querySelector("#drawerAiKeys")?.addEventListener("click", () => showSetupGuideModal("keys"));
   els.setupDrawerBody.querySelector("#drawerConnectEngine")?.addEventListener("click", () => showConnectEngineModal());
-  els.setupDrawerBody.querySelector("#drawerAddOllama")?.addEventListener("click", () => showQuickCredentialModal("ollama_local"));
+  els.setupDrawerBody.querySelector("#drawerAddGemini")?.addEventListener("click", () => showQuickCredentialModal("google_gemini"));
 }
 
 function showSetupGuideModal(scrollTo = "") {
@@ -328,11 +447,10 @@ function showSetupGuideModal(scrollTo = "") {
   showModal("Setup guide", `${getSetupGuideBodyHtml()}
     <div class="modal-actions">
       <button type="button" class="ghost-button" data-close-modal>Got it</button>
-      <button type="button" class="ghost-button" id="howtoAddGrok">Add Grok key</button>
-      <button type="button" class="ghost-button" id="howtoAddOllama">Add Local (Ollama)</button>
       <button type="button" class="ghost-button" id="howtoOpenLocal">Open localhost:3099</button>
       <button type="button" class="primary-button" id="howtoConnectEngine">Connect engine</button>
     </div>`);
+  bindSetupGuideAiButtons();
   document.getElementById("howtoOpenLocal")?.addEventListener("click", () => {
     window.open("http://localhost:3099", "_blank");
     showToast("If that tab loads, use it — that's the full app.");
@@ -340,14 +458,6 @@ function showSetupGuideModal(scrollTo = "") {
   document.getElementById("howtoConnectEngine")?.addEventListener("click", () => {
     closeModal();
     showConnectEngineModal();
-  });
-  document.getElementById("howtoAddGrok")?.addEventListener("click", () => {
-    closeModal();
-    showQuickCredentialModal("xai_grok");
-  });
-  document.getElementById("howtoAddOllama")?.addEventListener("click", () => {
-    closeModal();
-    showQuickCredentialModal("ollama_local");
   });
   if (scrollTo) {
     requestAnimationFrame(() => {
@@ -554,7 +664,8 @@ function renderCredentialCards(list) {
   if (!els.credentialList) return;
   els.credentialList.innerHTML = "";
   if (!list.length) {
-    els.credentialList.innerHTML = `<div class="workflow-empty"><p>No API keys yet — tap <strong>Local</strong> for free Ollama models, or <strong>OpenAI</strong> / <strong>Grok</strong> above. See <strong>Setup guide</strong> for PowerShell install steps.</p></div>`;
+    els.credentialList.innerHTML = `<div class="workflow-empty"><p>No API keys yet — tap any button above (<strong>Local</strong>, <strong>Gemini</strong>, <strong>DeepSeek</strong>, <strong>Grok</strong>, <strong>OpenAI</strong>). <button type="button" class="guide-inline-link" id="credListSetupHelp">How to set up all free options</button></p></div>`;
+    document.getElementById("credListSetupHelp")?.addEventListener("click", () => showSetupGuideModal("keys"));
     return;
   }
   list.forEach((cred) => {
@@ -1295,13 +1406,22 @@ function handleChatCommand(raw) {
     if (match) { addBlock(match.type); addChatMessage("bot", `Added ${match.name}.`); }
     else { addChatMessage("bot", `Unknown. Try: add http / add code / add delay / add webhook / add schedule / add email`); }
   } else if (lower === "help" || lower === "?") {
-    addChatMessage("bot", "Commands: run · reset · arrange · add [type] · connect · grok · ollama · local · keys · help | Setup guide is in the sidebar.");
+    addChatMessage("bot", "Commands: run · connect · gemini · deepseek · grok · openai · ollama · keys · help | Setup guide → all free AI options.");
   } else if (lower === "connect" || lower === "engine" || lower === "setup") {
     showSetupGuideModal("engine");
+  } else if (lower === "gemini" || lower === "google") {
+    showSetupGuideModal("keys");
+    showQuickCredentialModal("google_gemini");
+  } else if (lower === "deepseek") {
+    showSetupGuideModal("keys");
+    showQuickCredentialModal("deepseek_api");
   } else if (lower === "grok" || lower === "xai") {
     showSetupGuideModal("keys");
     showQuickCredentialModal("xai_grok");
-  } else if (lower === "keys" || lower === "api") {
+  } else if (lower === "openai" || lower === "gpt") {
+    showSetupGuideModal("keys");
+    showQuickCredentialModal("openai_api");
+  } else if (lower === "keys" || lower === "api" || lower === "ai") {
     showSetupGuideModal("keys");
     document.querySelector(".panel-keys")?.scrollIntoView({ behavior: "smooth", block: "start" });
   } else if (lower === "ollama" || lower === "local" || lower === "local llm") {
