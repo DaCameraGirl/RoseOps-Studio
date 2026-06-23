@@ -23,7 +23,7 @@ Real execution engine — not a mockup. Not a visualizer.
 
 <br />
 
-[Quick Start](#-quick-start) · [Features](#-features) · [Node Types](#-node-types) · [Deploy](#-deploy) · [Architecture](#-architecture)
+[Quick Start](#-quick-start) · [Features](#-features) · [What's Been Built](#-whats-been-built-grok--angela-sessions) · [Node Types](#-node-types) · [Deploy](#-deploy) · [Architecture](#-architecture)
 
 ---
 
@@ -85,6 +85,104 @@ In the app: type **`connect`** in Assistant chat, or click the connection status
 | **OpenAI** | Trial → paid |
 
 In RoseOps: **API keys** dropdown → **Add key** → **AI Chat** step → matching provider + model.
+
+---
+
+## 📖 What's been built (Grok + Angela sessions)
+
+This section is the **verbose honest log** of what shipped recently — especially the work from **June 22–23, 2026** when Angela started pairing with **Grok** in Cursor to turn RoseOps from “pretty UI” into something people can actually run, connect, and use with real AI.
+
+A mirror of this log lives in the companion repo **[groks-work](https://github.com/DaCameraGirl/groks-work)** (session notes, PR trail, decisions).
+
+### The goal we kept circling back to
+
+> **n8n for the girlies** — enterprise-grade workflow automation that feels welcoming, not intimidating.  
+> Build flows in the browser. Run them for real. Store API keys safely. **Nobody should need to read GitHub docs to figure out how to connect.**
+
+### Before vs after (this sprint)
+
+| Area | Before | After |
+|------|--------|-------|
+| **New workflow** | Empty list, confusing | **Starter picker** on `+` — 7 templates including AI Assistant |
+| **Onboarding** | Broken on GitHub Pages | Fixed deployment path; empty canvas auto-repairs from templates |
+| **UX copy** | Dev-tool jargon | Plain language, checklists, toasts, Getting started panel |
+| **Canvas** | Steps off-screen at bottom | Fit-to-view, horizontal auto-arrange, “Show all steps” |
+| **API keys** | Unclear | n8n-style vault + quick-add; **dropdown per provider** |
+| **LLMs** | None | OpenAI, Gemini, DeepSeek, Grok, **Claude**, **Azure Copilot**, **local Ollama** |
+| **Connecting engine** | Mystery URL field | In-app **Setup guide** — sidebar, tabs, PowerShell, chat commands |
+| **Desktop** | Broken shortcut (`m9m` path) | `start-roseops.cmd` + health check on port 3099 |
+| **GitHub Pages** | Looked connected but couldn’t run | Preview mode banner; connect to localhost or deployed engine |
+
+### Merged pull requests (#5 → #18)
+
+Each item was a **feature branch → PR → merge to `master`** (Angela approves direction; agents ship).
+
+| PR | What it did |
+|----|-------------|
+| **#5** | Starter workflow picker when you hit `+ Add` |
+| **#6** | Onboarding / deployment path fix |
+| **#7** | UX friendliness pass — hints, guide panel, warmer copy |
+| **#8** | Canvas fit-to-view — steps visible without scrolling |
+| **#9** | LLM node + encrypted API keys (OpenAI, Gemini, DeepSeek, Grok) |
+| **#10** | Empty canvas repair on GitHub Pages (templates hydrate workflows) |
+| **#11** | Desktop launcher `start-roseops.cmd` + shortcut fix |
+| **#12** | Connect engine modal — desktop icon vs deploy URL explained |
+| **#13** | Self-service “How to connect” (banner, status badge, chat) |
+| **#14** | Full setup guide **in the website**, not just README |
+| **#15** | Free local LLMs via **Ollama** + PowerShell |
+| **#16** | Complete local LLM checklist (engine + Ollama + first run) |
+| **#17** | All free/freemium cloud providers documented (not just Grok) |
+| **#18** | **Dropdown + tabs** per AI provider with PowerShell test scripts |
+
+Earlier foundation: **#3** Enterprise v3 engine, **#4** visual overhaul.
+
+### In-app Setup guide (the main self-service doc)
+
+Everything below lives **on the live site** — hard refresh (`Ctrl+Shift+R`) if you don’t see it.
+
+**Section 1 — Connect the engine**
+
+RoseOps = **studio** (UI) + **engine** (`server.js`). GitHub Pages is preview-only.
+
+- Clone → `npm install` → `npm start` → `http://localhost:3099`
+- Or double-click `start-roseops.cmd` / desktop shortcut
+- Or deploy `server.js` to Render/Railway → **Connect engine** → paste URL
+
+**Section 2 — All AI providers (dropdown + tabs)**
+
+| Tab | Provider | Free until… | PowerShell in guide |
+|-----|----------|-------------|---------------------|
+| Local | Ollama | Always free | `winget install Ollama.Ollama`, `ollama pull llama3.2` |
+| Gemini | Google | Rate limits | `Invoke-RestMethod` test |
+| DeepSeek | DeepSeek | Freemium limits | API test script |
+| Claude | Anthropic | Trial → paid | `x-api-key` test |
+| Grok | xAI | Credits run out | Bearer test |
+| Copilot | Azure OpenAI | Azure credits | Endpoint + deployment test |
+| OpenAI | OpenAI | Trial → paid | Chat completions test |
+
+**API keys sidebar:** dropdown → **Add key** → pick key in **AI Chat** step → **Run workflow**.
+
+**Assistant chat shortcuts:** `connect` · `gemini` · `deepseek` · `claude` · `grok` · `copilot` · `openai` · `ollama` · `keys` · `help`
+
+### Technical additions (engine)
+
+- `lib/llm.js` — multi-provider chat (OpenAI-compatible, Gemini, Anthropic Messages, Azure OpenAI, Ollama)
+- `lib/credentials.js` — types: `openai_api`, `google_gemini`, `deepseek_api`, `xai_grok`, `anthropic_api`, `azure_openai`, `ollama_local`
+- `lib/starter-workflows.js` + `starters.json` — template catalog with repair for empty workflows
+- `app.js` — `AI_PROVIDER_GUIDES`, tabbed setup modal, SSE, localStorage fallback on Pages
+
+### URLs
+
+| What | URL |
+|------|-----|
+| Live UI (Pages) | https://dacameragirl.github.io/RoseOps-Studio/ |
+| Full stack local | http://localhost:3099 |
+| Main repo | https://github.com/DaCameraGirl/RoseOps-Studio |
+| Grok session log repo | https://github.com/DaCameraGirl/groks-work |
+
+### What’s still “you need the engine”
+
+GitHub Pages **cannot** run Node. Building flows works; **Run workflow**, encrypted vault, and Ollama calls need `npm start` locally (or a deployed engine). The app explains this everywhere now — that was the whole point.
 
 ---
 
