@@ -128,6 +128,7 @@ async function init() {
   els.keyQuickGrid?.querySelectorAll("[data-provider]").forEach((btn) => {
     btn.addEventListener("click", () => showQuickCredentialModal(btn.dataset.provider));
   });
+  document.getElementById("keysSetupHelp")?.addEventListener("click", () => showSetupGuideModal("local"));
   document.querySelectorAll("[data-close-modal]").forEach((el) => el.addEventListener("click", closeModal));
   if (els.browseTemplates) {
     els.browseTemplates.addEventListener("click", () => {
@@ -211,21 +212,23 @@ function showPagesDeployBanner() {
 
 const REPO_CLONE_URL = "https://github.com/DaCameraGirl/RoseOps-Studio.git";
 
-const LOCAL_LLM_POWERSHELL = `# 1) Install Ollama (free local LLM runner) — run in PowerShell:
+const ROSEOPS_POWERSHELL = `# RoseOps engine — run once in PowerShell (first-time setup):
+git clone ${REPO_CLONE_URL}
+cd RoseOps-Studio
+npm install
+Copy-Item .env.example .env
+npm start
+# Keep this window open. Browser opens http://localhost:3099`;
+
+const LOCAL_LLM_POWERSHELL = `# Ollama — run in a second PowerShell window:
 winget install Ollama.Ollama
 
-# If winget isn't available, use the official installer instead:
+# If winget isn't available:
 # irm https://ollama.com/install.ps1 | iex
 
-# 2) Open a NEW PowerShell window, then pull a free model (pick one):
+# Open a NEW PowerShell window after install, then:
 ollama pull llama3.2
-# ollama pull mistral
-# ollama pull phi3
-
-# 3) Confirm Ollama is running and see your models:
 ollama list
-
-# 4) Quick test (optional):
 ollama run llama3.2 "Say hello in one sentence"`;
 
 function getSetupGuideBodyHtml() {
@@ -258,17 +261,35 @@ function getSetupGuideBodyHtml() {
       <div class="howto-step"><span class="howto-step-num">3</span><span><strong>Add in RoseOps</strong><span>Left sidebar → <strong>API keys</strong> → tap <strong>Grok</strong> (or OpenAI / Gemini / DeepSeek) → paste key → save.</span></span></div>
       <div class="howto-step"><span class="howto-step-num">4</span><span><strong>Use in a workflow</strong><span>Drag <strong>AI Chat</strong> onto the canvas → set Provider to <strong>xai</strong> → pick your Grok key → set model (e.g. <code>grok-2</code>) → run.</span></span></div>
     </div>
-    <h3 class="howto-section-title" id="setup-local-llm">3 · Free local LLMs (PowerShell + Ollama)</h3>
-    <p class="onboarding-subtitle">Run models on <strong>your PC</strong> — no cloud API bill. RoseOps talks to <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a> at <code>http://localhost:11434</code> (OpenAI-compatible).</p>
-    <div class="howto-steps">
-      <div class="howto-step"><span class="howto-step-num">1</span><span><strong>Install with PowerShell</strong><span>Open <strong>PowerShell</strong> (not CMD) and run the commands below. Ollama starts automatically after install.</span></span></div>
-      <div class="howto-step"><span class="howto-step-num">2</span><span><strong>Download a model</strong><span><code>ollama pull llama3.2</code> downloads a free model (a few GB). Other options: <code>mistral</code>, <code>phi3</code>, <code>gemma2</code>.</span></span></div>
-      <div class="howto-step"><span class="howto-step-num">3</span><span><strong>Add in RoseOps</strong><span>Left sidebar → <strong>API keys</strong> → <strong>Local</strong> → save (default URL is fine).</span></span></div>
-      <div class="howto-step"><span class="howto-step-num">4</span><span><strong>Use in a workflow</strong><span><strong>AI Chat</strong> step → Provider <strong>ollama</strong> → pick your Local key → Model matches what you pulled (e.g. <code>llama3.2</code>) → <strong>Run workflow</strong>.</span></span></div>
+    <h3 class="howto-section-title" id="setup-local-llm">3 · Free local LLMs — full setup</h3>
+    <p class="onboarding-subtitle">Run AI on <strong>your PC</strong> with zero API cost. You need <strong>two things running</strong>: the RoseOps engine (<code>localhost:3099</code>) and Ollama (<code>localhost:11434</code>).</p>
+    <div class="howto-checklist">
+      <p class="howto-checklist-title">Complete checklist (do in order)</p>
+      <ol class="howto-checklist-steps">
+        <li><strong>Start RoseOps engine</strong> — PowerShell block A below, or double-click <code>start-roseops.cmd</code>. Status should show <strong>● enterprise</strong> (not ● pages / ● offline).</li>
+        <li><strong>Install Ollama</strong> — PowerShell block B: <code>winget install Ollama.Ollama</code></li>
+        <li><strong>Download a model</strong> — new PowerShell window: <code>ollama pull llama3.2</code> (wait for download to finish)</li>
+        <li><strong>Test Ollama</strong> — <code>ollama list</code> should show <code>llama3.2</code></li>
+        <li><strong>Add Local key in RoseOps</strong> — sidebar <strong>API keys</strong> → tap <strong>Local</strong> → leave URL as <code>http://localhost:11434/v1</code> → <strong>Save key</strong></li>
+        <li><strong>Open a workflow</strong> — tap <strong>+ Add</strong> → pick <strong>AI Assistant</strong> template (or any workflow)</li>
+        <li><strong>Configure AI Chat step</strong> — click the <strong>AI Chat</strong> step on canvas → Provider: <strong>ollama</strong> → API Key: your Local key → Model: <code>llama3.2</code> (must match what you pulled)</li>
+        <li><strong>Run it</strong> — click <strong>Run workflow</strong> → check <strong>Execution</strong> panel on the right for the response</li>
+      </ol>
     </div>
+    <p class="howto-code-label">A · RoseOps engine (PowerShell — first time)</p>
+    <pre class="howto-code" id="roseopsPs1">${ROSEOPS_POWERSHELL}</pre>
+    <p class="howto-code-label">B · Ollama + model (PowerShell — second window)</p>
     <pre class="howto-code" id="localLlmPs1">${LOCAL_LLM_POWERSHELL}</pre>
-    <p class="onboarding-subtitle">Requires the RoseOps <strong>engine</strong> running locally (<code>npm start</code>) so it can reach Ollama on your machine.</p>
-    <p class="onboarding-subtitle">Assistant shortcuts: <code>connect</code> · <code>grok</code> · <code>ollama</code> · <code>local</code> · <code>keys</code> · <code>help</code></p>`;
+    <div class="howto-troubleshoot">
+      <p class="howto-checklist-title">If something fails</p>
+      <ul class="howto-troubleshoot-list">
+        <li><strong>Run workflow greyed out / nothing happens</strong> — engine not connected. Run <code>npm start</code> and use <code>localhost:3099</code>, not GitHub Pages alone.</li>
+        <li><strong>LLM error / connection refused</strong> — Ollama not running. Open PowerShell and run <code>ollama list</code>; reinstall with block B if needed.</li>
+        <li><strong>Model not found</strong> — Model name in the step must exactly match <code>ollama list</code> (e.g. <code>llama3.2</code>, not <code>llama3</code>).</li>
+        <li><strong>Slow first reply</strong> — normal; Ollama loads the model into RAM on first run.</li>
+      </ul>
+    </div>
+    <p class="onboarding-subtitle">Assistant shortcuts: <code>connect</code> · <code>ollama</code> · <code>local</code> · <code>setup</code> · <code>help</code></p>`;
 }
 
 function renderSetupDrawer() {
@@ -281,16 +302,18 @@ function renderSetupDrawer() {
   const keyCount = getCredentialList().length;
   els.setupDrawerBody.innerHTML = `
     ${status}
+    <p class="setup-path-label">Free local AI setup:</p>
     <ol class="setup-mini-steps">
-      <li><strong>Engine:</strong> clone repo → <code>npm start</code> → <code>localhost:3099</code></li>
-      <li><strong>Grok:</strong> <a href="https://console.x.ai" target="_blank" rel="noopener">console.x.ai</a> → API keys → tap <strong>Grok</strong> in sidebar</li>
-      <li><strong>Local LLM:</strong> PowerShell → <code>winget install Ollama.Ollama</code> → <code>ollama pull llama3.2</code></li>
-      <li><strong>Workflow:</strong> AI Chat → provider <strong>ollama</strong> or <strong>xai</strong></li>
+      <li><code>npm start</code> → open <code>localhost:3099</code></li>
+      <li>PowerShell: <code>winget install Ollama.Ollama</code></li>
+      <li><code>ollama pull llama3.2</code> then <code>ollama list</code></li>
+      <li>Tap <strong>Local</strong> under API keys → Save</li>
+      <li>AI Chat step → <strong>ollama</strong> → model <code>llama3.2</code> → Run</li>
     </ol>
     <p class="setup-keys-note">${keyCount ? `${keyCount} API key${keyCount === 1 ? "" : "s"} saved` : "No API keys yet"}</p>
     <div class="setup-drawer-actions">
       <button type="button" class="ghost-button" id="drawerFullGuide">Full guide</button>
-      <button type="button" class="ghost-button" id="drawerLocalLlm">Local LLM steps</button>
+      <button type="button" class="ghost-button" id="drawerLocalLlm">How to set up Local</button>
       ${connected ? "" : `<button type="button" class="ghost-button" id="drawerConnectEngine">Connect engine</button>`}
       <button type="button" class="primary-button" id="drawerAddOllama">Add Local key</button>
     </div>`;
@@ -1351,9 +1374,10 @@ function credentialFieldsForType(type) {
     google_gemini: apiKeyField,
     deepseek_api: apiKeyField,
     xai_grok: apiKeyField,
-    ollama_local: `<p class="onboarding-subtitle">Install Ollama first — open <strong>Setup guide → Local LLM</strong> for PowerShell commands.</p>
+    ollama_local: `<p class="onboarding-subtitle"><strong>Before saving:</strong> RoseOps engine running (<code>npm start</code>) + Ollama installed (<code>ollama pull llama3.2</code>). <button type="button" class="guide-inline-link" id="credOllamaSetupHelp">Full setup steps</button></p>
       <label>Ollama URL<input type="url" id="credOllamaUrl" value="http://localhost:11434/v1" placeholder="http://localhost:11434/v1" /></label>
-      <label>API key (optional)<input type="text" id="credApiKey" value="ollama" autocomplete="off" placeholder="ollama" /></label>`,
+      <label>API key (optional)<input type="text" id="credApiKey" value="ollama" autocomplete="off" placeholder="ollama" /></label>
+      <p class="onboarding-subtitle">Then in your <strong>AI Chat</strong> step: Provider <strong>ollama</strong>, Model <strong>llama3.2</strong>.</p>`,
     discord_webhook: `<label>Webhook URL<input type="url" id="credUrl" required /></label>`,
     webhook_url: `<label>Webhook URL<input type="url" id="credUrl" required /></label>`,
     github_token: `<label>Personal Access Token<input type="password" id="credToken" required autocomplete="off" /></label>`,
@@ -1395,6 +1419,7 @@ function collectCredentialData(type) {
 
 function showQuickCredentialModal(provider) {
   const preset = CREDENTIAL_PRESETS[provider] || { label: "API Key", name: "My API Key", hint: "Paste your API key below." };
+  if (provider === "ollama_local") preset.name = "My PC — Ollama (llama3.2)";
   showModal(`Connect ${preset.label}`, `
     <p class="onboarding-subtitle">${preset.hint}</p>
     <form id="quickCredForm" class="credential-form-grid">
@@ -1406,6 +1431,10 @@ function showQuickCredentialModal(provider) {
         <button type="submit" class="primary-button">Save key</button>
       </div>
     </form>`);
+  document.getElementById("credOllamaSetupHelp")?.addEventListener("click", () => {
+    closeModal();
+    showSetupGuideModal("local");
+  });
   document.getElementById("quickCredForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     try {

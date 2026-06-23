@@ -742,6 +742,65 @@ button {
   background: rgba(168, 216, 200, 0.15);
 }
 
+.howto-code-label,
+.setup-path-label {
+  margin: 14px 0 6px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.howto-checklist {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(168, 216, 200, 0.7);
+  border-radius: var(--radius-sm);
+  background: rgba(168, 216, 200, 0.1);
+}
+
+.howto-checklist-title {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.howto-checklist-steps {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.howto-checklist-steps li + li {
+  margin-top: 8px;
+}
+
+.howto-troubleshoot {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.howto-troubleshoot-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.howto-troubleshoot-list li + li {
+  margin-top: 6px;
+}
+
+.panel-hint .guide-inline-link {
+  font-size: inherit;
+}
+
 .topbar-actions {
   display: flex;
   flex-wrap: wrap;

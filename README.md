@@ -72,15 +72,13 @@ In the app: type **`connect`** in Assistant chat, or click the connection status
 
 ### Free local LLMs (PowerShell + Ollama)
 
-The in-app **Setup guide → section 3** has copy-paste PowerShell commands. Short version:
+Full step-by-step checklist is in the app: **Setup guide → section 3**. Summary:
 
-```powershell
-winget install Ollama.Ollama
-ollama pull llama3.2
-ollama list
-```
-
-Then in RoseOps: **API keys → Local** → **AI Chat** step with provider **ollama** and model **llama3.2**. Requires the engine running locally (`npm start`).
+1. Start RoseOps: `git clone` → `npm install` → `npm start` → `localhost:3099`
+2. Install Ollama: `winget install Ollama.Ollama`
+3. Pull a model: `ollama pull llama3.2` → verify with `ollama list`
+4. RoseOps: **API keys → Local** → Save
+5. Open **AI Assistant** template → **AI Chat** step → provider **ollama**, model **llama3.2** → **Run workflow**
 
 ---
 
