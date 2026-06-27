@@ -9,17 +9,40 @@
       <stop offset="0%" stop-color="#e8739a"/>
       <stop offset="100%" stop-color="#bc8cff"/>
     </linearGradient>
+    <linearGradient id="shimmer" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e8739a" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#e8739a" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#bc8cff" stop-opacity="0"/>
+    </linearGradient>
   </defs>
   <rect width="920" height="220" rx="18" fill="url(#bg)"/>
-  <rect x="1" y="1" width="918" height="218" rx="17" fill="none" stroke="rgba(188,140,255,0.28)" stroke-width="2"/>
-  <circle cx="96" cy="110" r="52" fill="rgba(188,140,255,0.08)" stroke="rgba(188,140,255,0.35)" stroke-width="2"/>
-  <rect x="72" y="86" width="48" height="36" rx="10" fill="none" stroke="url(#accent)" stroke-width="3"/>
-  <circle cx="84" cy="102" r="4" fill="#bc8cff"/>
-  <circle cx="96" cy="102" r="4" fill="#bc8cff"/>
-  <circle cx="108" cy="102" r="4" fill="#bc8cff"/>
-  <path d="M78 118 Q96 128 114 118" fill="none" stroke="#e8739a" stroke-width="2" stroke-linecap="round"/>
+  <rect x="-200" y="0" width="240" height="220" rx="18" fill="url(#shimmer)" opacity="0.9">
+    <animate attributeName="x" values="-240;920" dur="7s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="1" y="1" width="918" height="218" rx="17" fill="none" stroke="#e8739a" stroke-width="2" opacity="0.35">
+    <animate attributeName="opacity" values="0.35;0.65;0.35" dur="3s" repeatCount="indefinite"/>
+  </rect>
+  
+  <circle cx="72" cy="102" r="7" fill="#e8739a">
+    <animate attributeName="r" values="7;9;7" dur="1.2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="96" cy="118" r="7" fill="#bc8cff">
+    <animate attributeName="r" values="7;9;7" dur="1.2s" begin="0.4s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="120" cy="102" r="7" fill="#e8739a">
+    <animate attributeName="r" values="7;9;7" dur="1.2s" begin="0.8s" repeatCount="indefinite"/>
+  </circle>
+  <path d="M79 102 H89 M103 110 L113 104" stroke="#bc8cff" stroke-width="2" fill="none" stroke-dasharray="6 4">
+    <animate attributeName="stroke-dashoffset" values="20;0;20" dur="1.5s" repeatCount="indefinite"/>
+  </path>
   <text x="170" y="92" fill="#f8fbff" font-family="Segoe UI, system-ui, sans-serif" font-size="38" font-weight="800">RoseOps Studio</text>
   <text x="170" y="126" fill="#9db4d1" font-family="Segoe UI, system-ui, sans-serif" font-size="17" font-weight="500">n8n-inspired workflow automation with a feminine DevOps soul — drag-to-connect nodes, visual pipelines, runbook automation.</text>
-  <rect x="170" y="148" width="96" height="28" rx="14" fill="rgba(188,140,255,0.14)" stroke="#e8739a66" stroke-width="1"/><text x="218" y="167" fill="#e8739a" font-family="Segoe UI, system-ui, sans-serif" font-size="12" font-weight="700" text-anchor="middle">WORKFLOWS</text>
-  <rect x="278" y="148" width="88" height="28" rx="14" fill="rgba(188,140,255,0.14)" stroke="#bc8cff66" stroke-width="1"/><text x="322" y="167" fill="#bc8cff" font-family="Segoe UI, system-ui, sans-serif" font-size="12" font-weight="700" text-anchor="middle">DEVOPS</text>
+  <rect x="170" y="148" width="96" height="28" rx="14" fill="rgba(188,140,255,0.14)" stroke="#e8739a66" stroke-width="1">
+    <animate attributeName="opacity" values="1;0.75;1" dur="2.5s" begin="0s" repeatCount="indefinite"/>
+  </rect>
+  <text x="218" y="167" fill="#e8739a" font-family="Segoe UI, system-ui, sans-serif" font-size="12" font-weight="700" text-anchor="middle">WORKFLOWS</text>
+  <rect x="278" y="148" width="88" height="28" rx="14" fill="rgba(188,140,255,0.14)" stroke="#bc8cff66" stroke-width="1">
+    <animate attributeName="opacity" values="1;0.75;1" dur="2.5s" begin="0.3s" repeatCount="indefinite"/>
+  </rect>
+  <text x="322" y="167" fill="#bc8cff" font-family="Segoe UI, system-ui, sans-serif" font-size="12" font-weight="700" text-anchor="middle">DEVOPS</text>
 </svg>
