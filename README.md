@@ -37,7 +37,7 @@
   Built by <strong>Angela Hudson</strong> · <a href="https://github.com/DaCameraGirl">DaCameraGirl</a>
 </p>
 <p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
-<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%E2%9C%A8%20What%20is%20RoseOps%3F&fontSize=22&fontColor=e6edf3" width="720" alt="✨ What is RoseOps?" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=waving&color=0:070b14,100:12102a&height=50&section=header&text=%E2%9C%A8%20What%20is%20RoseOps%3F&fontSize=22&fontColor=e6edf3&animation=twinkling" width="720" alt="✨ What is RoseOps?" /></p>
 
 
 RoseOps Studio is **n8n-inspired workflow automation** built for people who want power *without* the bro-y DevOps aesthetic. Drag nodes, connect handles, execute real workflows — with encrypted credentials, audit logs, and production validation baked in.
@@ -52,7 +52,7 @@ RoseOps Studio is **n8n-inspired workflow automation** built for people who want
 ---
 
 <p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
-<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%F0%9F%9A%80%20Quick%20Start&fontSize=22&fontColor=e6edf3" width="720" alt="🚀 Quick Start" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=waving&color=0:070b14,100:12102a&height=50&section=header&text=%F0%9F%9A%80%20Quick%20Start&fontSize=22&fontColor=e6edf3&animation=twinkling" width="720" alt="🚀 Quick Start" /></p>
 
 
 ### Full stack (recommended)
@@ -101,7 +101,7 @@ In RoseOps: **API keys** dropdown → **Add key** → **AI Chat** step → match
 ---
 
 <p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
-<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%F0%9F%93%96%20What's%20been%20built%20(Grok%20%2B%20Angela%20sessions)&fontSize=22&fontColor=e6edf3" width="720" alt="📖 What's been built (Grok + Angela sessions)" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=waving&color=0:070b14,100:12102a&height=50&section=header&text=%F0%9F%93%96%20What's%20been%20built%20(Grok%20%2B%20Angela%20sessions)&fontSize=22&fontColor=e6edf3&animation=twinkling" width="720" alt="📖 What's been built (Grok + Angela sessions)" /></p>
 
 
 This section is the **verbose honest log** of what shipped recently — especially the work from **June 22–23, 2026** when Angela started pairing with **Grok** in Cursor to turn RoseOps from “pretty UI” into something people can actually run, connect, and use with real AI.
@@ -202,7 +202,7 @@ GitHub Pages **cannot** run Node. Building flows works; **Run workflow**, encryp
 ---
 
 <p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
-<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%F0%9F%92%8E%20Features&fontSize=22&fontColor=e6edf3" width="720" alt="💎 Features" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=waving&color=0:070b14,100:12102a&height=50&section=header&text=%F0%9F%92%8E%20Features&fontSize=22&fontColor=e6edf3&animation=twinkling" width="720" alt="💎 Features" /></p>
 
 
 ### Execution engine
@@ -235,7 +235,7 @@ GitHub Pages **cannot** run Node. Building flows works; **Run workflow**, encryp
 ---
 
 <p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
-<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%F0%9F%A7%A9%20Node%20Types&fontSize=22&fontColor=e6edf3" width="720" alt="🧩 Node Types" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=waving&color=0:070b14,100:12102a&height=50&section=header&text=%F0%9F%A7%A9%20Node%20Types&fontSize=22&fontColor=e6edf3&animation=twinkling" width="720" alt="🧩 Node Types" /></p>
 
 
 | Node | What it does |
@@ -255,7 +255,7 @@ GitHub Pages **cannot** run Node. Building flows works; **Run workflow**, encryp
 ---
 
 <p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
-<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%F0%9F%8C%90%20Deploy&fontSize=22&fontColor=e6edf3" width="720" alt="🌐 Deploy" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=waving&color=0:070b14,100:12102a&height=50&section=header&text=%F0%9F%8C%90%20Deploy&fontSize=22&fontColor=e6edf3&animation=twinkling" width="720" alt="🌐 Deploy" /></p>
 
 
 | Target | What runs | How |
@@ -274,7 +274,7 @@ ROSEOPS_ENCRYPTION_KEY=32-plus-character-secret
 ---
 
 <p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
-<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%F0%9F%8F%97%20Architecture&fontSize=22&fontColor=e6edf3" width="720" alt="🏗 Architecture" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=waving&color=0:070b14,100:12102a&height=50&section=header&text=%F0%9F%8F%97%20Architecture&fontSize=22&fontColor=e6edf3&animation=twinkling" width="720" alt="🏗 Architecture" /></p>
 
 
 ```
