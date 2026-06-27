@@ -1,35 +1,44 @@
-<div align="center">
+<p align="center">
+  <img src="docs/readme-banner.svg" alt="RoseOps Studio — n8n-inspired workflow automation with a feminine DevOps soul — drag-to-connect nodes, visual pipelines, runbook automation." width="720" />
+</p>
 
-# ✿ RoseOps Studio
+<p align="center">
+  <strong>n8n-inspired workflow automation with a feminine DevOps soul — drag-to-connect nodes, visual pipelines, runbook automation.</strong>
+</p>
 
-**Enterprise workflow automation with a feminine DevOps soul.**  
-Real execution engine — not a mockup. Not a visualizer.
+<p align="center">
+  <a href="https://dacameragirl.github.io/RoseOps-Studio/"><img src="https://img.shields.io/badge/Live-GitHub%20Pages-33d69f?style=for-the-badge&logo=github&logoColor=white" alt="Live demo" /></a>
+  <a href="https://github.com/DaCameraGirl/RoseOps-Studio"><img src="https://img.shields.io/badge/Code-GitHub-58a6ff?style=for-the-badge&logo=github&logoColor=white" alt="Source code" /></a>
+</p>
 
-<br />
+<p align="center">
+  <img src="https://img.shields.io/badge/version-3.0.0 enterprise-e8739a?style=flat-square" alt="version-3.0.0 enterprise" />
+  <img src="https://img.shields.io/badge/deploy-GitHub Pages-000000?style=flat-square&logo=github&logoColor=white" alt="deploy-GitHub Pages" />
+  <img src="https://img.shields.io/badge/license-All Rights Reserved-c24b73?style=flat-square" alt="license-All Rights Reserved" />
+</p>
 
-[![Version](https://img.shields.io/badge/version-3.0.0--enterprise-e8739a?style=for-the-badge&logo=semanticrelease&logoColor=white)](https://github.com/DaCameraGirl/RoseOps-Studio/releases)
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](package.json)
-[![JavaScript](https://img.shields.io/badge/JavaScript-ES2022-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](app.js)
-[![Express](https://img.shields.io/badge/Express-4.x-000000?style=for-the-badge&logo=express&logoColor=white)](server.js)
-[![SQLite](https://img.shields.io/badge/SQLite-WAL-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](server.js)
-[![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-c24b73?style=for-the-badge)](LICENSE)
+### Languages
 
-<br />
+<p align="center">
+  <img src="https://img.shields.io/badge/JavaScript-75%25-F7DF1E?style=flat-square&logo=javascript&logoColor=111" alt="JavaScript" />
+  <img src="https://img.shields.io/badge/CSS-20%25-1572B6?style=flat-square&logo=css3&logoColor=white" alt="CSS" />
+  <img src="https://img.shields.io/badge/HTML-4%25-E34F26?style=flat-square&logo=html5&logoColor=white" alt="HTML" />
+</p>
 
-[![Live Studio](https://img.shields.io/badge/🌐_Live_Studio-GitHub_Pages-b8a9d4?style=for-the-badge)](https://dacameragirl.github.io/RoseOps-Studio/)
-[![API](https://img.shields.io/badge/⚡_Engine-Node_Server-a8d8c8?style=for-the-badge)](server.js)
-[![Credentials](https://img.shields.io/badge/🔐_Vault-AES--256--GCM-9b8ec4?style=for-the-badge)](lib/crypto.js)
-[![Audit](https://img.shields.io/badge/📋_Audit-Full_Trail-7bc4b4?style=for-the-badge)](lib/audit.js)
+### Stack
 
-<br />
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-engine-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js-engine" />
+  <img src="https://img.shields.io/badge/SQLite-WAL-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite-WAL" />
+  <img src="https://img.shields.io/badge/Express-API-000000?style=flat-square&logo=express&logoColor=white" alt="Express-API" />
+</p>
 
-[Quick Start](#-quick-start) · [Features](#-features) · [What's Been Built](#-whats-been-built-grok--angela-sessions) · [Node Types](#-node-types) · [Deploy](#-deploy) · [Architecture](#-architecture)
+<p align="center">
+  Built by <strong>Angela Hudson</strong> · <a href="https://github.com/DaCameraGirl">DaCameraGirl</a>
+</p>
+<p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%E2%9C%A8%20What%20is%20RoseOps%3F&fontSize=22&fontColor=e6edf3" width="720" alt="✨ What is RoseOps?" /></p>
 
----
-
-</div>
-
-## ✨ What is RoseOps?
 
 RoseOps Studio is **n8n-inspired workflow automation** built for people who want power *without* the bro-y DevOps aesthetic. Drag nodes, connect handles, execute real workflows — with encrypted credentials, audit logs, and production validation baked in.
 
@@ -42,7 +51,9 @@ RoseOps Studio is **n8n-inspired workflow automation** built for people who want
 
 ---
 
-## 🚀 Quick Start
+<p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%F0%9F%9A%80%20Quick%20Start&fontSize=22&fontColor=e6edf3" width="720" alt="🚀 Quick Start" /></p>
+
 
 ### Full stack (recommended)
 
@@ -89,7 +100,9 @@ In RoseOps: **API keys** dropdown → **Add key** → **AI Chat** step → match
 
 ---
 
-## 📖 What's been built (Grok + Angela sessions)
+<p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%F0%9F%93%96%20What's%20been%20built%20(Grok%20%2B%20Angela%20sessions)&fontSize=22&fontColor=e6edf3" width="720" alt="📖 What's been built (Grok + Angela sessions)" /></p>
+
 
 This section is the **verbose honest log** of what shipped recently — especially the work from **June 22–23, 2026** when Angela started pairing with **Grok** in Cursor to turn RoseOps from “pretty UI” into something people can actually run, connect, and use with real AI.
 
@@ -188,7 +201,9 @@ GitHub Pages **cannot** run Node. Building flows works; **Run workflow**, encryp
 
 ---
 
-## 💎 Features
+<p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%F0%9F%92%8E%20Features&fontSize=22&fontColor=e6edf3" width="720" alt="💎 Features" /></p>
+
 
 ### Execution engine
 - **HTTP Request** — real API calls with retries + auth credentials
@@ -219,7 +234,9 @@ GitHub Pages **cannot** run Node. Building flows works; **Run workflow**, encryp
 
 ---
 
-## 🧩 Node Types
+<p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%F0%9F%A7%A9%20Node%20Types&fontSize=22&fontColor=e6edf3" width="720" alt="🧩 Node Types" /></p>
+
 
 | Node | What it does |
 |---|---|
@@ -237,7 +254,9 @@ GitHub Pages **cannot** run Node. Building flows works; **Run workflow**, encryp
 
 ---
 
-## 🌐 Deploy
+<p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%F0%9F%8C%90%20Deploy&fontSize=22&fontColor=e6edf3" width="720" alt="🌐 Deploy" /></p>
+
 
 | Target | What runs | How |
 |---|---|---|
@@ -254,7 +273,9 @@ ROSEOPS_ENCRYPTION_KEY=32-plus-character-secret
 
 ---
 
-## 🏗 Architecture
+<p align="center"><img src="docs/readme-divider.svg" width="720" alt="" /></p>
+<p align="center"><img src="https://capsule-render.vercel.app/api?type=rect&color=070b14&height=50&section=header&text=%F0%9F%8F%97%20Architecture&fontSize=22&fontColor=e6edf3" width="720" alt="🏗 Architecture" /></p>
+
 
 ```
 RoseOps-Studio/
